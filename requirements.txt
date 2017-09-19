@@ -1,0 +1,4 @@
+networkx
+rdkit
+matplotlib
+numpy
