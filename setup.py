@@ -13,9 +13,12 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # get the dependencies and installs
 with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     all_reqs = f.read().split('\n')
+with open(path.join(here, 'dev-requirements.txt'), encoding='utf-8') as f:
+    dev_reqs = f.read().split('\n')
 
 install_requires = [x.strip() for x in all_reqs if 'git+' not in x]
 dependency_links = [x.strip().replace('git+', '') for x in all_reqs if x.startswith('git+')]
+dev_reqs = [x.strip().replace('git+', '') for x in dev_reqs if x.startswith('git+')]
 
 setup(
     name='mapping-graph',
@@ -36,12 +39,6 @@ setup(
     author='Andrew White',
     install_requires=install_requires,
     dependency_links=dependency_links,
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
-    author_email='white.d.andrew@gmail.com',
-    entry_points=
-       {
-           'console_scripts': ['mapg=mapg.mapg:main'],
-        }
-
+    tests_require=dev_reqs,
+    author_email='white.d.andrew@gmail.com'
 )

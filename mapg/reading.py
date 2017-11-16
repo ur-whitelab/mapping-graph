@@ -1,4 +1,4 @@
-%matplotlib inline
+'''Functions to help read in molecular structures'''
 from rdkit import Chem
 import networkx as nx
 import numpy as np
@@ -8,10 +8,9 @@ import matplotlib as mpl
 from rdkit.Chem.Draw.MolDrawing import MolDrawing, DrawingOptions
 import svgutils.transform as sg
 
-#########RDKitMoltoNX#########
-'''Argument for the RD2NX function should be a valid SMILES sequence'''
-def RD2NX(sml):
 
+def smiles2graph(sml):
+    '''Argument for the RD2NX function should be a valid SMILES sequence'''
     m = Chem.MolFromSmiles(sml)
     m = Chem.AddHs(m)
     G = nx.Graph()
@@ -32,6 +31,7 @@ def RD2NX(sml):
     return G, LG
 
 def draw(sml, equiv_bonds=None, color_by_equiv=False):
+    '''Draw a structure with equivalent bonds optionally highlighted from a SMILES string'''
     m = Chem.MolFromSmiles(sml)
     m = Chem.AddHs(m)
     rdDepictor.Compute2DCoords(m)
