@@ -1,22 +1,24 @@
 '''Functions to help read in molecular structures'''
-from rdkit import Chem
+import rdkit, rdkit.Chem, rdkit.Chem.rdDepictor, rdkit.Chem.Draw
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 import pygraphviz
 import matplotlib as mpl
-from rdkit.Chem.Draw.MolDrawing import MolDrawing, DrawingOptions
 import svgutils.transform as sg
 
 
 def smiles2graph(sml):
-    '''Argument for the RD2NX function should be a valid SMILES sequence'''
-    m = Chem.MolFromSmiles(sml)
-    m = Chem.AddHs(m)
+    '''Argument for the RD2NX function should be a valid SMILES sequence
+
+    returns: the graph and it's linegraph
+    '''
+    m = rdkit.Chem.MolFromSmiles(sml)
+    m = rdkit.Chem.AddHs(m)
     G = nx.Graph()
 
     for i in m.GetAtoms():
-        G.add_node(i.GetIdx(),atmType=i.GetSymbol())
+        G.add_node(i.GetIdx(),atomType=i.GetSymbol())
 
     for j in m.GetBonds():
         G.add_edge(j.GetBeginAtomIdx(),j.GetEndAtomIdx())
@@ -25,19 +27,20 @@ def smiles2graph(sml):
     LG = nx.line_graph(G)
     #add the data to edges for atom types. Note, doesn't include bond order
     for n in LG.nodes():
-        LG.node[n]['bond'] = [G.node[n[0]]['atmType'], G.node[n[1]]['atmType']]
+        LG.node[n]['bond'] = [G.node[n[0]]['atomType'], G.node[n[1]]['atomType']]
         LG.node[n]['bond'].sort()
         LG.node[n]['bond'] = ''.join(LG.node[n]['bond'])
     return G, LG
 
 def draw(sml, equiv_bonds=None, color_by_equiv=False):
     '''Draw a structure with equivalent bonds optionally highlighted from a SMILES string'''
-    m = Chem.MolFromSmiles(sml)
-    m = Chem.AddHs(m)
-    rdDepictor.Compute2DCoords(m)
+    m = rdkit.Chem.MolFromSmiles(sml)
+    m = rdkit.Chem.AddHs(m)
+
+    rdkit.Chem.rdDepictor.Compute2DCoords(m)
 
 
-    drawer = rdMolDraw2D.MolDraw2DSVG(400,200)
+    drawer = rdkit.Chem.Draw.rdMolDraw2D.MolDraw2DSVG(400,200)
     drawer.drawOptions().bgColor = None
     if equiv_bonds is not None:
         #convert to list
@@ -45,11 +48,9 @@ def draw(sml, equiv_bonds=None, color_by_equiv=False):
             for i,e in enumerate(equiv_bonds):
                 #print(b.GetBeginAtomIdx(), b.GetEndAtomIdx(),e)
                 if( (b.GetBeginAtomIdx(), b.GetEndAtomIdx()) in e):
-
                     #only include bond classes that have more than one member
                     if(len(e) > 1):
                         return i
-
                     else:
                         break
             return -1
@@ -84,10 +85,5 @@ def draw(sml, equiv_bonds=None, color_by_equiv=False):
         drawer.DrawMolecule(m)
     drawer.FinishDrawing()
     svg = drawer.GetDrawingText().replace('svg:','')
-    if os.path.isdir("./img") == False:
-        os.mkdir('./img')
-    target = open('./img/SVG'+sml+'.svg', 'w')
-    target.write(svg)
-    target.close()
-    return display.SVG(svg)
+    return svg
 

@@ -1,3 +1,3 @@
 '''mapping graph (mapg)'''
 
-from .reading import smiles2graph
+from .reading import smiles2graph, draw
