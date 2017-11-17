@@ -28,15 +28,19 @@ def test_hash_neighs():
     for g_node in line_graph.nodes_iter():
         spath=nx.shortest_path_length(line_graph,source=g_node)
     max_d=max(spath.items(), key=operator.itemgetter(1))[1]
-    #Identify the CCl node of the line_graph for chloro ethane, which we set as the root
+    #Identify the CC node of the line_graph for chloro ethane, which we set as the root
     for (p, d) in line_graph.nodes(data=True):
-            if d['bond'] == 'CCl':
+            if d['bond'] == 'CC':
                 set_root=p
     test_tree= mapg.hash_neighs(set_root,line_graph,max_depth=max_d)
-    #Checking if the maximum depth of the tree with CCl node as root is 2
+    #Checking if hash_neigh returns a tree
+    assert(nx.is_tree(test_tree))
+    #Checking if the maximum depth of the tree with CC node as root is 1
     tree_depth=nx.shortest_path_length(line_graph,source=set_root)
     max_tree_depth=max(tree_depth.items(), key=operator.itemgetter(1))[1]
-    assert(max_tree_depth==2)
+    assert(max_tree_depth==1)
+    #Checking if degree of CC node from the returned tree has degree 6
+    assert(nx.degree(test_tree,nbunch=set_root)==6)
 
 def test_bond_equiv_classes():
     '''Tests if the function correctly identifies
