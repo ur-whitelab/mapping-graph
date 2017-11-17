@@ -1,3 +1,7 @@
+import networkx as nx
+import pygraphviz
+import numpy as np
+from rdkit import Chem
 def hash_neighs(n, graph, depth=0, tree=None, max_depth=1):
     '''Builds a tree to fixed depth of all neighbors of n'''
 
