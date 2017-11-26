@@ -18,7 +18,7 @@ def test_partition_mot():
     layer = set()
     #addition is union, selection gets a layer
     for n in mot[1, :]:
-        layer += n
+        layer |= n
     molgraph, _ = smiles2graph('CO')
     assert len(layer) == len(molgraph)
 

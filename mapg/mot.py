@@ -17,8 +17,7 @@ class MOT:
         self._nodes = [[] for _ in range(self._layers)]
         for n,d in self._graph.nodes_iter(data=True):
             layer_i = d['atom_number'] - 1
-            print(n)
-            self._nodes[layer_i].append(n)
+            self._nodes[layer_i].append(set(n))
     def _remove_bond(self, G, LG, parent, bond, recurse=True):
         #check for end
         if len(G) == 0:
@@ -43,9 +42,7 @@ class MOT:
 
     def __getitem__(self, index):
         #return as set so that it can be added
-        print(set(self._nodes[index[0]][index[1]]))
-        print(type(set(self._nodes[index[0]][index[1]])))
-        return set(self._nodes[index[0]][index[1]])
+        return self._nodes[index[0]][index[1]]
 
     def validate_path(self, path):
         pass
