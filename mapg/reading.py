@@ -29,7 +29,7 @@ def smiles2graph(sml):
     for n in LG.nodes():
         LG.node[n]['bond'] = [G.node[n[0]]['atomType'], G.node[n[1]]['atomType']]
         LG.node[n]['bond'].sort()
-        LG.node[n]['bond'] = ''.join(LG.node[n]['bond'])
+        #LG.node[n]['bond'] = ''.join(LG.node[n]['bond'])
     return G, LG
 
 def draw(sml, equiv_bonds=None, color_by_equiv=False):
