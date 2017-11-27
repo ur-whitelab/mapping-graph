@@ -1,10 +1,7 @@
 '''Functions to help read in molecular structures'''
 import rdkit, rdkit.Chem, rdkit.Chem.rdDepictor, rdkit.Chem.Draw
 import networkx as nx
-import numpy as np
 import matplotlib.pyplot as plt
-import pygraphviz
-import matplotlib as mpl
 import svgutils.transform as sg
 
 
@@ -29,7 +26,7 @@ def smiles2graph(sml):
     for n in LG.nodes():
         LG.node[n]['bond'] = [G.node[n[0]]['atomType'], G.node[n[1]]['atomType']]
         LG.node[n]['bond'].sort()
-        #LG.node[n]['bond'] = ''.join(LG.node[n]['bond'])
+        LG.node[n]['bond'] = ''.join(LG.node[n]['bond'])
     return G, LG
 
 def draw(sml, equiv_bonds=None, color_by_equiv=False):

@@ -29,9 +29,9 @@ def test_hash_neighs():
         spath=nx.shortest_path_length(line_graph,source=g_node)
     max_d=max(spath.items(), key=operator.itemgetter(1))[1]
     #Identify the CC node of the line_graph for chloro ethane, which we set as the root
-    for (p, d) in line_graph.nodes(data=True):
-            if d['bond'] == 'CC':
-                set_root=p
+    for p, d in line_graph.nodes(data=True):
+        if d['bond'] == 'CC':
+            set_root=p
     test_tree= mapg.hash_neighs(set_root,line_graph,max_depth=max_d)
     #Checking if hash_neigh returns a tree
     assert(nx.is_tree(test_tree))
@@ -50,7 +50,7 @@ def test_bond_equiv_classes():
     equiv_bond_groups1=mapg.bond_equiv_classes(graph1,line_graph1)
     #Since there is no symmetry, all the four bonds will have their individual equivalence groups
     assert(len(equiv_bond_groups1)==4)
-    
+
     #check number of bond classes in chloroacetone containing local symmetry
     graph2, line_graph2=mapg.smiles2graph('CC(=O)CCl')
     equiv_bond_groups2=mapg.bond_equiv_classes(graph2,line_graph2)
@@ -60,6 +60,6 @@ def test_bond_equiv_classes():
     graph3, line_graph3=mapg.smiles2graph('CC(C)(C)C')
     equiv_bond_groups3=mapg.bond_equiv_classes(graph3,line_graph3)
     assert(len(equiv_bond_groups3)==2)
-            
-    
-    
+
+
+
