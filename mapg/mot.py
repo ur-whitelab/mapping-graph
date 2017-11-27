@@ -1,6 +1,8 @@
 import networkx as nx
 from .reading import smiles2graph
 from .bond_equiv import bond_equiv_classes
+import matplotlib.pyplot as plt
+import io
 
 class MOT:
     def __init__(self, smiles,symmetry=False):
@@ -79,3 +81,13 @@ class MOT:
 
     def validate_path(self, path):
         pass
+    
+    def draw(self):
+        pos=nx.graphviz_layout(self._graph, prog="twopi")
+        fig = plt.figure()
+        nx.draw(self._graph, pos)
+        with io.BytesIO() as output:
+            fig.savefig(output, format='jpg')
+            fig.clf()
+            plt.close('all')
+            return output.getvalue()

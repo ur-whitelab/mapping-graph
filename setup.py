@@ -39,6 +39,10 @@ setup(
     author='Andrew White',
     install_requires=install_requires,
     dependency_links=dependency_links,
+    entry_points=
+      {
+        'console_scripts': ['mapping-graph=mapg.run:start']
+      },
     tests_require=dev_reqs,
     author_email='white.d.andrew@gmail.com'
 )
