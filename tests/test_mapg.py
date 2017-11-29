@@ -11,9 +11,9 @@ def test_smiles2graph():
     # get index of carbon atom
     c_index, o_index = -1, -1
     for n,d in graph.nodes(data=True):
-        if d['atomType'] == 'C':
+        if d['atom_type'] == 'C':
             c_index = n
-        elif d['atomType'] == 'O':
+        elif d['atom_type'] == 'O':
             o_index = n
     assert(graph.has_edge(c_index, o_index))
 

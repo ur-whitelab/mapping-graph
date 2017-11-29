@@ -15,7 +15,7 @@ def smiles2graph(sml):
     G = nx.Graph()
 
     for i in m.GetAtoms():
-        G.add_node(i.GetIdx(),atomType=i.GetSymbol())
+        G.add_node(i.GetIdx(),atom_type=i.GetSymbol())
 
     for j in m.GetBonds():
         G.add_edge(j.GetBeginAtomIdx(),j.GetEndAtomIdx())
@@ -24,7 +24,7 @@ def smiles2graph(sml):
     LG = nx.line_graph(G)
     #add the data to edges for atom types. Note, doesn't include bond order
     for n in LG.nodes():
-        LG.node[n]['bond'] = [G.node[n[0]]['atomType'], G.node[n[1]]['atomType']]
+        LG.node[n]['bond'] = [G.node[n[0]]['atom_type'], G.node[n[1]]['atom_type']]
         LG.node[n]['bond'].sort()
         LG.node[n]['bond'] = ''.join(LG.node[n]['bond'])
     return G, LG
