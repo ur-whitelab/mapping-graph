@@ -1,4 +1,4 @@
-from .reading import smiles2graph
+from .reading import smiles2graph, chem_line_graph
 from .bond_equiv import bond_equiv_classes
 
 import matplotlib.pyplot as plt
@@ -74,8 +74,8 @@ class MOT:
                         #make sure we don't remove atom i if it's part of
                         #the designated non-degenerate bond
                         if equiv_bond[i] in _G and not equiv_bond[i] == bond[i]:
-                            #_G.remove_node(equiv_bond[i])
-                            pass
+                            _G.remove_node(equiv_bond[i])
+                            #pass
                         _LG.remove_node(equiv_bond)
 
             #actually remove the other atom and bond
@@ -84,29 +84,43 @@ class MOT:
             _LG.remove_node(bond)
             #check if the graph is still connected
             print(layer, self._LG.node[bond]['bond'], i, j, _G.nodes(data=True))
-            if len(_G) > 0:
-                _G = list(nx.connected_component_subgraphs(_G))[0]
-            if len(_G) > 0 and nx.is_connected(_G):
-                new_node = frozenset(_G.nodes())
+            for _SG in nx.connected_component_subgraphs(_G):
+                _SLG = chem_line_graph(_SG)
+                #copy over attributes
+                for n in _SLG.nodes():
+                    _SLG.node[n]['equiv_class'] = _LG.node[n]['equiv_class']
+                    _SLG.node[n]['degenerate'] = _LG.node[n]['degenerate']
+                new_node = frozenset(_SG.nodes())
                 #new node will have the list of atoms that make it up
                 #and the number of atoms
 
                 #FYI node may already be there
-                atom_string = ','.join([d['atom_type'] for _, d in _G.nodes_iter(data=True)])
-                id_string = ','.join([str(n) for n in _G])
-                self._graph.add_node(new_node, {'atom_number': len(_G.nodes()),
+                atom_string = ','.join([d['atom_type'] for _, d in _SG.nodes_iter(data=True)])
+                id_string = ','.join([str(n) for n in _SG])
+                self._graph.add_node(new_node, {'atom_number': len(_SG.nodes()),
                                                 'label': atom_string + '\n' + id_string,
                                                 'layer': layer})
-                #only add if we are the first to add it
+                #only replace parent if it is more closely related
+                diff = abs(self._graph.node[parent]['atom_number'] - len(_SG.nodes()))
+                to_del = []
+                for e in self._graph.in_edges(new_node):
+                    p = e[0]
+                    if diff > abs(self._graph.node[p]['atom_number'] - len(_SG.nodes())):
+                        diff = abs(self._graph.node[p]['atom_number'] - len(_SG.nodes()))
+                        parent = p
+                    to_del.append((p, new_node))
+                #delete all other edges if existing
+                self._graph.remove_edges_from(to_del)
+                print(parent,new_node)
                 self._graph.add_edge(parent, new_node)
                 #now remove all bonds
-                for new_bond in _LG.nodes():
+                for new_bond in _SLG.nodes():
                     if recurse:
                         if symmetry:
                             #need to only remove one bond per equivalence class
-                            if _LG.node[new_bond]['degenerate']:
+                            if _SLG.node[new_bond]['degenerate']:
                                 continue
-                        self._remove_bond(_G, _LG, new_node, new_bond, symmetry=symmetry, layer = layer + 1)
+                        self._remove_bond(_SG, _SLG, new_node, new_bond, symmetry=symmetry, layer = layer + 1)
 
     def __getitem__(self, index):
         #return as set so that it can be added

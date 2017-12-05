@@ -19,15 +19,17 @@ def smiles2graph(sml):
 
     for j in m.GetBonds():
         G.add_edge(j.GetBeginAtomIdx(),j.GetEndAtomIdx())
+    return G, chem_line_graph(G)
 
+def chem_line_graph(graph):
     #get line graph (vertx -> edge, edge -> vertex)
-    LG = nx.line_graph(G)
+    LG = nx.line_graph(graph)
     #add the data to edges for atom types. Note, doesn't include bond order
     for n in LG.nodes():
-        LG.node[n]['bond'] = [G.node[n[0]]['atom_type'], G.node[n[1]]['atom_type']]
+        LG.node[n]['bond'] = [graph.node[n[0]]['atom_type'], graph.node[n[1]]['atom_type']]
         LG.node[n]['bond'].sort()
         LG.node[n]['bond'] = ''.join(LG.node[n]['bond'])
-    return G, LG
+    return LG
 
 def draw(sml, equiv_bonds=None, color_by_equiv=False):
     '''Draw a structure with equivalent bonds optionally highlighted from a SMILES string'''
