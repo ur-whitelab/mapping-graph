@@ -54,7 +54,6 @@ class MOT:
         if len(G) == 0:
             return
 
-        print(bond, layer)
         #remove bond and form two subsets from each side
         #of the two atoms that make it up
         for i in range(2):
@@ -83,7 +82,6 @@ class MOT:
                 _G.remove_node(bond[j])
             _LG.remove_node(bond)
             #check if the graph is still connected
-            print(layer, self._LG.node[bond]['bond'], i, j, _G.nodes(data=True))
             for _SG in nx.connected_component_subgraphs(_G):
                 _SLG = chem_line_graph(_SG)
                 #copy over attributes
@@ -100,18 +98,7 @@ class MOT:
                 self._graph.add_node(new_node, {'atom_number': len(_SG.nodes()),
                                                 'label': atom_string + '\n' + id_string,
                                                 'layer': layer})
-                #only replace parent if it is more closely related
-                diff = abs(self._graph.node[parent]['atom_number'] - len(_SG.nodes()))
-                to_del = []
-                for e in self._graph.in_edges(new_node):
-                    p = e[0]
-                    if diff > abs(self._graph.node[p]['atom_number'] - len(_SG.nodes())):
-                        diff = abs(self._graph.node[p]['atom_number'] - len(_SG.nodes()))
-                        parent = p
-                    to_del.append((p, new_node))
-                #delete all other edges if existing
-                self._graph.remove_edges_from(to_del)
-                print(parent,new_node)
+                #add parent
                 self._graph.add_edge(parent, new_node)
                 #now remove all bonds
                 for new_bond in _SLG.nodes():
@@ -121,6 +108,23 @@ class MOT:
                             if _SLG.node[new_bond]['degenerate']:
                                 continue
                         self._remove_bond(_SG, _SLG, new_node, new_bond, symmetry=symmetry, layer = layer + 1)
+
+    def prune_parents(self):
+        '''Reduce the number of parents'''
+        for n,d in self._graph.nodes_iter(data=True):
+            # find the closest atom number for parents
+            diff = 9999
+            for e in self._graph.in_edges(n):
+                p = e[0]
+                if diff > abs(self._graph.node[p]['atom_number'] - d['atom_number']):
+                    diff = abs(self._graph.node[p]['atom_number'] - d['atom_number'])
+            to_del = []
+            #Now delete all parents that don't match that number
+            for e in self._graph.in_edges(n):
+                p = e[0]
+                if diff != abs(self._graph.node[p]['atom_number'] - d['atom_number']):
+                    to_del.append(e)
+            self._graph.remove_edges_from(to_del)
 
     def __getitem__(self, index):
         #return as set so that it can be added

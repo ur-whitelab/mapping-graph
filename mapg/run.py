@@ -16,6 +16,7 @@ def build_mot(smiles='CO', symmetry=True, mol_output='mol.svg', mot_output='mot.
             f.write(svg)
     mot = MOT(smiles, symmetry)
     mot.build()
+    mot.prune_parents()
     if mot_output is not None:
         svg = mot.draw()
         with open(mot_output, 'wb') as f:
