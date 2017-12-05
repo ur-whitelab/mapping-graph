@@ -83,6 +83,8 @@ class MOT:
             _LG.remove_node(bond)
             #check if the graph is still connected
             for _SG in nx.connected_component_subgraphs(_G):
+                if not (bond[0] in _SG or bond[1] in _SG):
+                    continue
                 _SLG = chem_line_graph(_SG)
                 #copy over attributes
                 for n in _SLG.nodes():
@@ -99,7 +101,11 @@ class MOT:
                                                 'label': atom_string + '\n' + id_string,
                                                 'layer': layer})
                 #add parent
-                self._graph.add_edge(parent, new_node)
+                do_add = False
+                for n in new_node:
+                    do_add |= n in parent
+                #if do_add:
+                #self._graph.add_edge(parent, new_node)
                 #now remove all bonds
                 for new_bond in _SLG.nodes():
                     if recurse:
@@ -107,24 +113,55 @@ class MOT:
                             #need to only remove one bond per equivalence class
                             if _SLG.node[new_bond]['degenerate']:
                                 continue
-                        self._remove_bond(_SG, _SLG, new_node, new_bond, symmetry=symmetry, layer = layer + 1)
+                        self._remove_bond(_SG, _LG, new_node, new_bond, symmetry=symmetry, layer = layer + 1)
 
     def prune_parents(self):
         '''Reduce the number of parents'''
+        possible_children = self._graph.nodes()
+        possible_children.sort(key=lambda c: self._graph.node[c]['atom_number'], reverse=True)
+        layer_i = [None for _ in range(len(self._G) + 1)]
+        last_layer = len(self._G)
+        for i,n in enumerate(possible_children):
+            print(i, last_layer, self._graph.node[n]['atom_number'])
+            if last_layer != self._graph.node[n]['atom_number']:
+                last_layer = self._graph.node[n]['atom_number']
+                layer_i[last_layer] = i
+        print(layer_i)
+
         for n,d in self._graph.nodes_iter(data=True):
-            # find the closest atom number for parents
-            diff = 9999
-            for e in self._graph.in_edges(n):
-                p = e[0]
-                if diff > abs(self._graph.node[p]['atom_number'] - d['atom_number']):
-                    diff = abs(self._graph.node[p]['atom_number'] - d['atom_number'])
+            #only keep edges that add to node set
+            atom_number = self._graph.node[n]['atom_number']
+            if atom_number == 1:
+                continue
+            #get the next lowest layer
+            atom_number -= 1
+            while layer_i[atom_number] is None:
+                atom_number -= 1
+            index = layer_i[atom_number]
+
+            required = set(n)
+            print(index, self._graph.node[n]['atom_number'])
+            print(n, possible_children[index:])
+            for c in possible_children[index:]:
+                if not required.isdisjoint(c):
+                    required -= c
+                    self._graph.add_edge(n, c)
+            #assert len(required ) == 0
+
+
+    def prune_nodes(self):
+        '''Remove nodes that have one parent and one child'''
+        success = True
+        while success:
             to_del = []
-            #Now delete all parents that don't match that number
-            for e in self._graph.in_edges(n):
-                p = e[0]
-                if diff != abs(self._graph.node[p]['atom_number'] - d['atom_number']):
-                    to_del.append(e)
-            self._graph.remove_edges_from(to_del)
+            for n in self._graph:
+                if len(self._graph.in_edges(n)) == 1 and len(self._graph.out_edges(n)) == 1:
+                    #add the edge now
+                    self._graph.add_edge(list(self._graph.in_edges(n))[0][0],
+                                        list(self._graph.out_edges(n))[0][1])
+                    to_del.append(n)
+            self._graph.remove_nodes_from(to_del)
+            success = len(to_del) > 0
 
     def __getitem__(self, index):
         #return as set so that it can be added
