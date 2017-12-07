@@ -87,21 +87,22 @@ def test_general_equiv_classes():
     equivalent bonds'''
     #check the number of equivalent bonds with no local or global symmetry
     graph1,line_graph1=mapg.smiles2graph('C(F)(Cl)Br')
-    equiv_bond_groups1=mapg.general_equiv_classes(graph1,line_graph1,key='bond')
+    equiv_bond_groups1=mapg.general_equiv_classes(line_graph1,key='bond')
     #Since there is no symmetry, all the four bonds will have their individual equivalence groups
     assert(len(equiv_bond_groups1)==4)
 
     #check number of bond classes in chloroacetone containing local symmetry
     graph2, line_graph2=mapg.smiles2graph('CC(=O)CCl')
-    equiv_bond_groups2=mapg.general_equiv_classes(graph2,line_graph2,key='bond')
+    equiv_bond_groups2=mapg.general_equiv_classes(line_graph2,key='bond')
     assert(len(equiv_bond_groups2)==6)
 
     #check number of bond classes in neopentane which displays global symmetry
     graph3, line_graph3=mapg.smiles2graph('C1=CC=CC=C1')
-    equiv_bond_groups3=mapg.general_equiv_classes(graph3,line_graph3,key='bond')
+    equiv_bond_groups3=mapg.general_equiv_classes(line_graph3,key='bond')
     assert(len(equiv_bond_groups3)==2)
 
     #check number of equivalent atom classes in methanol
     graph4, line_graph4=mapg.smiles2graph('CO')
-    equiv_atom_groups1=mapg.general_equiv_classes(graph4,line_graph4,key='atom')
+    equiv_atom_groups1=mapg.general_equiv_classes(graph4,key='atom_type')
+    print(equiv_atom_groups1)
     assert(len(equiv_atom_groups1)==4)
