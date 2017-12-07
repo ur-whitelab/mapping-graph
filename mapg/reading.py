@@ -46,7 +46,9 @@ def draw(sml, equiv_bonds=None, color_by_equiv=False):
         def lookup_bond(b):
             for i,e in enumerate(equiv_bonds):
                 #print(b.GetBeginAtomIdx(), b.GetEndAtomIdx(),e)
-                if( (b.GetBeginAtomIdx(), b.GetEndAtomIdx()) in e):
+                bond_tup=tuple(sorted([b.GetBeginAtomIdx(), b.GetEndAtomIdx()]))
+                #if( (b.GetBeginAtomIdx(), b.GetEndAtomIdx()) in e):
+                if( bond_tup in e):
                     #only include bond classes that have more than one member
                     if(len(e) > 1):
                         return i

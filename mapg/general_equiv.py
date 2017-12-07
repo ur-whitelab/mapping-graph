@@ -1,43 +1,53 @@
 import networkx as nx
 import operator
 from collections import deque
-def hash_neighs(queue, graph,tree=None):
+def general_hash_neighs(queue, graph,trait,tree=None):
     '''Builds a tree to fixed depth of all neighbors of n'''
     n=queue.popleft()
+
     if(tree is None):
-        tree = nx.Graph(root=graph.node[n]['bond'])
-        tree.add_node(n, bond=graph.node[n]['bond'])
+
+        tree = nx.Graph(root=graph.node[n][trait])
+        tree.add_node(n, trait=graph.node[n][trait])
 
     for neigh in sorted(nx.all_neighbors(graph, n)):
         if(not neigh in tree.node):
             
-            tree.add_node(neigh, bond=graph.node[neigh]['bond'])
+            tree.add_node(neigh, trait=graph.node[neigh][trait])
             tree.add_edge(neigh, n)
             queue.append(neigh)
     
     if(len(queue) == 0):
         return tree
     else:
-        return(hash_neighs(queue,graph,tree))   
+        return(general_hash_neighs(queue,graph,trait,tree))   
 
-def bond_equiv_classes(G, LG, depth=None):
+def general_equiv_classes(G, LG,key='bond'):
     '''Function to identify equivalent bonds'''
-
+    if key=='bond':
+        graph=LG
+        trait='bond'
+    elif key=='atom':
+        graph=G
+        print(graph.nodes(data=True))
+        trait='atom_type'
+    else:
+        print('Invalid key-type')
     #Sub trees are constructed setting each node of edge graph LG to be root
     sub_trees = dict()
 
     def node_equal(n1, n2):
         '''Determine if two nodes are isomorphic'''
-        return (n1['bond'] == n2['bond'])
+        return (n1['trait'] == n2['trait'])
 
     #build all the trees
-    for i,n in enumerate(LG.nodes_iter()):
-        p = hash_neighs(deque([n]), LG)
+    for i,n in enumerate(graph.nodes_iter()):
+        p = general_hash_neighs(deque([n]), graph,trait)
         sub_trees[n] = p
 
     #equivalence classes
-    equiv = [set() for x in LG.nodes_iter()]
-    for e,n in zip(equiv, LG.nodes_iter()):
+    equiv = [set() for x in graph.nodes_iter()]
+    for e,n in zip(equiv, graph.nodes_iter()):
         e.add(n)
 
     #find the isomorphic trees and equivalence classes
@@ -49,7 +59,7 @@ def bond_equiv_classes(G, LG, depth=None):
 
             if(k1 == k2):
                 continue
-            if (LG.node[k1]['bond']==LG.node[k2]['bond']):
+            if (graph.node[k1][trait]==graph.node[k2][trait]):
                 '''If the root labels are different
                 the sub-trees are not isomorphic'''
                 gm = nx.isomorphism.GraphMatcher(g1, g2, node_match=node_equal)
