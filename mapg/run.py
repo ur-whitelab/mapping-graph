@@ -48,6 +48,16 @@ def draw_mol(smiles, output='molecule.svg', graph='graph.svg'):
 def subtrees(smiles, output='subtrees.svg'):
     from collections import deque
     G, LG = smiles2graph(smiles)
+    #print out equiv classes first
+
+    atom_classes = equiv_classes(G, key='atom_type')
+    cmap = plt.cm.get_cmap('Accent')
+    colors = [None for n in G]
+    for i,n in enumerate(G):
+        for j,ac in enumerate(atom_classes):
+            if n in ac:
+                colors[i] = cmap(j)
+
     #we build a composed tree for layout
     #then plot the individual subtrees
     composed_trees = nx.DiGraph()
@@ -61,13 +71,12 @@ def subtrees(smiles, output='subtrees.svg'):
         offset_node += len(s)
         composed_trees.add_nodes_from(composed_trees.nodes(data=True) + s.nodes(data=True))
         composed_trees.add_edges_from(composed_trees.edges() + s.edges())
-    fig = plt.figure(1, figsize=(8,8))
+    fig = plt.figure(1, figsize=(14,8))
     pos = graphviz_layout(composed_trees, prog='dot')
     labels = {n : composed_trees.node[n]['atom_type'] for n in composed_trees}
     # color nodes the same in each connected subgraph
-    for g, title in zip(subtrees,
+    for g, c, title in zip(subtrees, colors,
                         ['{}-{}'.format(n, d['atom_type']) for n,d in G.nodes(data=True)]):
-        c = [ random.random() ] * len(g) # random color...
         nx.draw(g,
              pos,
              node_color=c,
@@ -76,5 +85,6 @@ def subtrees(smiles, output='subtrees.svg'):
              labels=labels)
 
     plt.savefig(output)
-    for i, e in enumerate(equiv_classes(G, key='atom_type')):
+    for i, e in enumerate(atom_classes):
         print('{}.'.format(i), ','.join([labels[a] for a in e]))
+

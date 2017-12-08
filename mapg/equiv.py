@@ -9,9 +9,8 @@ def hash_neighs(queue, graph, trait, tree=None):
         tree = nx.DiGraph(root=graph.node[n][trait])
         tree.add_node(n, attr_dict={trait: graph.node[n][trait]})
 
-    for neigh in sorted(nx.all_neighbors(graph, n)):
+    for neigh in nx.all_neighbors(graph, n):
         if(not neigh in tree.node):
-
             tree.add_node(neigh, attr_dict={trait: graph.node[neigh][trait]})
             tree.add_edge(n, neigh)
             queue.append(neigh)
@@ -27,7 +26,7 @@ def equiv_classes(graph, key='bond'):
     sub_trees = dict()
 
     def node_equal(n1, n2):
-        '''Determine if two nodes are isomorphic'''
+        '''Determine if two nodes are equal'''
         return (n1[key] == n2[key])
 
     #build all the trees
@@ -36,10 +35,7 @@ def equiv_classes(graph, key='bond'):
         sub_trees[n] = p
 
     #equivalence classes
-    equiv = [set() for x in graph.nodes_iter()]
-    for e,n in zip(equiv, graph.nodes_iter()):
-        e.add(n)
-
+    equiv = [set([x]) for x in graph]
     #find the isomorphic trees and equivalence classes
     for k1, g1 in sub_trees.items():
         for k2, g2 in sub_trees.items():
@@ -48,7 +44,8 @@ def equiv_classes(graph, key='bond'):
             if (graph.node[k1][key] == graph.node[k2][key]):
                 '''If the root labels are different
                 the sub-trees are not isomorphic'''
-                gm = nx.isomorphism.DiGraphMatcher(g1, g2, node_match=node_equal)
+                gm = nx.isomorphism.DiGraphMatcher(g1, g2,
+                                                   node_match=node_equal)
                 if(gm.is_isomorphic()):
                     for i in range(len(equiv)):
                         if k1 in equiv[i]:
