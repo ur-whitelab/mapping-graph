@@ -18,7 +18,10 @@ def smiles2graph(sml):
         G.add_node(i.GetIdx(),atom_type=i.GetSymbol())
 
     for j in m.GetBonds():
-        G.add_edge(j.GetBeginAtomIdx(),j.GetEndAtomIdx())
+        u = min(j.GetBeginAtomIdx(),j.GetEndAtomIdx())
+        v = max(j.GetBeginAtomIdx(),j.GetEndAtomIdx())
+        order = j.GetBondType()
+        G.add_edge(u, v, bond='{}{}{}'.format(G.node[u]['atom_type'],order,G.node[v]['atom_type']))
     return G, chem_line_graph(G)
 
 def chem_line_graph(graph):
@@ -26,9 +29,7 @@ def chem_line_graph(graph):
     LG = nx.line_graph(graph)
     #add the data to edges for atom types. Note, doesn't include bond order
     for n in LG.nodes():
-        LG.node[n]['bond'] = [graph.node[n[0]]['atom_type'], graph.node[n[1]]['atom_type']]
-        LG.node[n]['bond'].sort()
-        LG.node[n]['bond'] = ''.join(LG.node[n]['bond'])
+        LG.node[n]['bond'] = graph[n[0]][n[1]]['bond']
     return LG
 
 def draw(sml, equiv_bonds=None, color_by_equiv=False):

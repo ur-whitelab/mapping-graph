@@ -14,7 +14,8 @@ def hash_neighs(node, graph, trait):
 
 def _hash_neighs(queue, graph, trait, reverse_order=False, tree=None):
     '''Builds a tree to fixed depth of all neighbors of n'''
-    n = queue.pop()
+    n = queue[0]
+    del queue[0]
 
     if(tree is None):
         tree = nx.DiGraph(root=graph.node[n][trait])

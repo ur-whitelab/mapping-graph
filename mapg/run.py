@@ -26,10 +26,11 @@ def mot(smiles, symmetry=True,mot_output='mot.svg'):
         with open(mot_output, 'wb') as f:
             f.write(svg)
 
-def draw_mol(smiles, output='molecule.svg', graph='graph.svg'):
+def draw_mol(smiles, output='molecule.svg', graph='graph.svg', line_graph='line_graph.svg'):
     G, LG = smiles2graph(smiles)
-    bec = equiv_classes(LG)
-    svg = draw(smiles, bec, True)
+    bond_classes = equiv_classes(LG)
+    print(len(bond_classes))
+    svg = draw(smiles, bond_classes, True)
     with open(output, 'w') as f:
         f.write(svg)
     atom_classes = equiv_classes(G, key='atom_type')
@@ -43,6 +44,16 @@ def draw_mol(smiles, output='molecule.svg', graph='graph.svg'):
     plt.figure(figsize=(4,4))
     nx.draw(G, pos, node_color=colors, labels={n: d['atom_type'] for n,d in G.nodes(data=True)})
     plt.savefig(graph)
+
+    colors = [None for n in LG]
+    for i,n in enumerate(LG):
+        for j,bc in enumerate(bond_classes):
+            if n in bc:
+                colors[i] = cmap(j)
+    pos = graphviz_layout(LG, prog='neato')
+    plt.figure(figsize=(4,4))
+    nx.draw(LG, pos, node_color=colors, labels={n: d['bond'] for n,d in LG.nodes(data=True)})
+    plt.savefig(line_graph)
 
 
 def subtrees(smiles, output='subtrees.svg'):
