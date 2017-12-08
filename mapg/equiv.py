@@ -32,4 +32,16 @@ def equiv_classes(graph, node_key='bond', edge_key='atom_type'):
             if(i != j):
                 equiv[i] |= equiv[j]
                 del equiv[j]
-    return equiv
+    frozen_equiv = [frozenset(s) for s in equiv]
+    return frozen_equiv
+
+def equiv_function(equiv):
+    '''Return an equivalence class function from a list of
+       equivalence sets'''
+    map = dict()
+    for i,e in enumerate(equiv):
+        for a in e:
+            map[a] = i
+    def result(a,b):
+        return map[a] == map[b]
+    return result
