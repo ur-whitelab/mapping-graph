@@ -13,6 +13,10 @@ def smiles2graph(sml):
     m = rdkit.Chem.MolFromSmiles(sml)
     m = rdkit.Chem.AddHs(m)
     G = nx.Graph()
+    order_string = {rdkit.Chem.rdchem.BondType.SINGLE: '-',
+                    rdkit.Chem.rdchem.BondType.DOUBLE: '=',
+                    rdkit.Chem.rdchem.BondType.TRIPLE: '#',
+                    rdkit.Chem.rdchem.BondType.AROMATIC: ':'}
 
     for i in m.GetAtoms():
         G.add_node(i.GetIdx(),atom_type=i.GetSymbol())
@@ -21,15 +25,20 @@ def smiles2graph(sml):
         u = min(j.GetBeginAtomIdx(),j.GetEndAtomIdx())
         v = max(j.GetBeginAtomIdx(),j.GetEndAtomIdx())
         order = j.GetBondType()
+        if order in order_string:
+            order = order_string[order]
         G.add_edge(u, v, bond='{}{}{}'.format(G.node[u]['atom_type'],order,G.node[v]['atom_type']))
     return G, chem_line_graph(G)
 
 def chem_line_graph(graph):
     #get line graph (vertx -> edge, edge -> vertex)
     LG = nx.line_graph(graph)
-    #add the data to edges for atom types. Note, doesn't include bond order
+    #add the data to edges for atom types
     for n in LG.nodes():
         LG.node[n]['bond'] = graph[n[0]][n[1]]['bond']
+    for e in LG.edges():
+        n = e[0][0]
+        LG[e[0]][e[1]]['atom_type'] = graph.node[n]['atom_type']
     return LG
 
 def draw(sml, equiv_bonds=None, color_by_equiv=False):
