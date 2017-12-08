@@ -11,19 +11,24 @@ import random
 
 def start():
     fire.Fire({
-        'mot': mot,
+        'MOT': mot,
+        'MOG': mog,
         'draw': draw_mol
     })
 
-def mot(smiles, symmetry=True,mot_output='mot.svg'):
-    mot = MOT(smiles, symmetry)
+def _mog(smiles, output, symmetry, tree):
+    mot = MOT(smiles, symmetry, tree=False)
     mot.build()
     mot.prune_parents()
     mot.prune_nodes()
-    if mot_output is not None:
-        svg = mot.draw()
-        with open(mot_output, 'wb') as f:
-            f.write(svg)
+    if output is not None:
+        plot = mot.draw(format=output.split('.')[1])
+        with open(output, 'wb') as f:
+            f.write(plot)
+def mot(smiles, output='mot.svg', symmetry=True):
+    return _mog(smiles, output, symmetry, True)
+def mog(smiles, output='mog.svg', symmetry=True):
+    return _mog(smiles, output, symmetry, False)
 
 def draw_mol(smiles, output='molecule.svg', graph='graph.svg', line_graph='line_graph.svg'):
     G, LG = smiles2graph(smiles)
