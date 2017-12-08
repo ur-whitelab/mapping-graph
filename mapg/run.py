@@ -46,7 +46,6 @@ def draw_mol(smiles, output='molecule.svg', graph='graph.svg'):
 
 
 def subtrees(smiles, output='subtrees.svg'):
-    from collections import deque
     G, LG = smiles2graph(smiles)
     #print out equiv classes first
 
@@ -64,7 +63,7 @@ def subtrees(smiles, output='subtrees.svg'):
     offset_node = 0
     subtrees = []
     for n in G:
-        s = hash_neighs(deque([n]), G, 'atom_type')
+        s = hash_neighs(n, G, 'atom_type')
         subtrees.append(s)
         #need to join them for plotting purposes
         nx.relabel_nodes(s, lambda n: n + offset_node, copy=False)
@@ -85,6 +84,7 @@ def subtrees(smiles, output='subtrees.svg'):
              labels=labels)
 
     plt.savefig(output)
+    print(labels)
     for i, e in enumerate(atom_classes):
-        print('{}.'.format(i), ','.join([labels[a] for a in e]))
+        print('{}.'.format(i), ','.join([G.node[a]['atom_type'] for a in e]))
 
