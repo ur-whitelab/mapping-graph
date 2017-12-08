@@ -1,5 +1,5 @@
 from .reading import smiles2graph, chem_line_graph
-from .bond_equiv import bond_equiv_classes
+from .equiv import equiv_classes
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
@@ -18,7 +18,7 @@ class MOT:
                                                            'label': 'root',
                                                            'layer': 0})
         #do symmetry processing if necessary
-        self._bond_classes = bond_equiv_classes(self._G, self._LG)
+        self._bond_classes = equiv_classes(self._G, self._LG)
         first_in_class = [True for _ in self._bond_classes]
         for bond in self._LG:
             index = -1

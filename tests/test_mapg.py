@@ -43,25 +43,6 @@ def test_hash_neighs():
     #Checking if degree of CC node from the returned tree has degree 6
     assert(nx.degree(test_tree,nbunch=set_root)==6)
 
-def test_bond_equiv_classes():
-    '''Tests if the function correctly identifies
-    equivalent bonds'''
-    #check the number of equivalent bonds with no local or global symmetry
-    graph1,line_graph1=mapg.smiles2graph('C(F)(Cl)Br')
-    equiv_bond_groups1=mapg.bond_equiv_classes(graph1,line_graph1)
-    #Since there is no symmetry, all the four bonds will have their individual equivalence groups
-    assert(len(equiv_bond_groups1)==4)
-
-    #check number of bond classes in chloroacetone containing local symmetry
-    graph2, line_graph2=mapg.smiles2graph('CC(=O)CCl')
-    equiv_bond_groups2=mapg.bond_equiv_classes(graph2,line_graph2)
-    assert(len(equiv_bond_groups2)==6)
-
-    #check number of bond classes in neopentane which displays global symmetry
-    graph3, line_graph3=mapg.smiles2graph('CC(C)(C)C')
-    equiv_bond_groups3=mapg.bond_equiv_classes(graph3,line_graph3)
-    assert(len(equiv_bond_groups3)==2)
-
 def test_general_hash_neighs():
     '''Tests if the hash_neighs function correctly gives a sub-tree'''
     graph, line_graph = mapg.smiles2graph('CCCl')

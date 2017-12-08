@@ -45,9 +45,7 @@ def draw(sml, equiv_bonds=None, color_by_equiv=False):
         #convert to list
         def lookup_bond(b):
             for i,e in enumerate(equiv_bonds):
-                #print(b.GetBeginAtomIdx(), b.GetEndAtomIdx(),e)
                 bond_tup=tuple(sorted([b.GetBeginAtomIdx(), b.GetEndAtomIdx()]))
-                #if( (b.GetBeginAtomIdx(), b.GetEndAtomIdx()) in e):
                 if( bond_tup in e):
                     #only include bond classes that have more than one member
                     if(len(e) > 1):
@@ -56,7 +54,6 @@ def draw(sml, equiv_bonds=None, color_by_equiv=False):
                         break
             return -1
         bond_classes = [lookup_bond(b) for b in m.GetBonds()]
-        #print(bond_classes)
         #remove the -1s
         highlight = []
         highlight_atoms = set()
@@ -65,14 +62,9 @@ def draw(sml, equiv_bonds=None, color_by_equiv=False):
                 highlight.append(i)
                 highlight_atoms.add(m.GetBonds()[i].GetBeginAtomIdx())
                 highlight_atoms.add(m.GetBonds()[i].GetEndAtomIdx())
-        bn = len(bond_classes)
-        ##cmap=plt.cm.get_cmap('Accent', bn)##
         cmap=plt.cm.get_cmap('Accent')
-        #print(bn)
         #use none or cmap for the classes
         colors={ i : cmap(bond_classes[i]) for i in highlight}
-        ##colors={ i : cmap(bond_classes[i] / bn) for i in highlight}##
-        #print(colors)
         if(color_by_equiv):
             drawer.DrawMolecule(m,highlightAtoms=list(highlight_atoms),
                             highlightBonds=highlight,
