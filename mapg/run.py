@@ -18,6 +18,7 @@ def start():
 def mot(smiles, symmetry=True,mot_output='mot.svg'):
     mot = MOT(smiles, symmetry)
     mot.build()
+    print(mot._graph.nodes())
     mot.prune_parents()
     mot.prune_nodes()
     if mot_output is not None:

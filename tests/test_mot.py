@@ -17,31 +17,6 @@ def test_remove_bond_mot_symm():
         mot._remove_bond(mot._G, mot._LG, mot._graph.nodes()[0], bond, False, True)
     assert len(mot._graph) == 1 + 1 + 1
 
-def test_partition_mot():
-    '''
-    Test that each layer is a valid partition of the atoms
-    '''
-    mot = MOT('CO')
-    mot.build()
-    layer = set()
-    #addition is union, selection gets a layer
-    for n in mot[1, :]:
-        layer |= n
-    molgraph, _ = smiles2graph('CO')
-    assert len(layer) == len(molgraph)
-
-def test_partition_mot_symm():
-    mot = MOT('CO', symmetry=True)
-    mot.build()
-    layer = set()
-    #addition is union, selection gets a layer
-    for n in mot[1, :]:
-        layer |= n
-    molgraph, _ = smiles2graph('CO')
-    assert len(layer) == len(molgraph)
-
-
-
 def test_exhaustive_mot():
     '''
     Test that all CG mappings are accounted for in the MOT
