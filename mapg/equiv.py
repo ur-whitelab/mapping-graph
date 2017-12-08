@@ -9,7 +9,8 @@ def hash_neighs(queue, graph, trait, tree=None):
         tree = nx.DiGraph(root=graph.node[n][trait])
         tree.add_node(n, attr_dict={trait: graph.node[n][trait]})
 
-    for neigh in nx.all_neighbors(graph, n):
+
+    for neigh in sorted(nx.all_neighbors(graph, n)):
         if(not neigh in tree.node):
             tree.add_node(neigh, attr_dict={trait: graph.node[neigh][trait]})
             tree.add_edge(n, neigh)
