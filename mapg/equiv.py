@@ -2,9 +2,7 @@ import networkx as nx
 import operator
 
 def equiv_classes(graph, node_key='bond', edge_key='atom_type'):
-    '''Function to identify equivalent bonds'''
-    #Sub trees are constructed setting each node of edge graph LG to be root
-    sub_trees = dict()
+    '''Function to identify equivalent nodes'''
 
     def node_equal(n1, n2):
         '''Determine if two nodes are equal'''
