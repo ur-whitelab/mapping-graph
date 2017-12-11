@@ -28,7 +28,7 @@ def smiles2graph(sml):
         if order in order_string:
             order = order_string[order]
         G.add_edge(u, v, bond='{}{}{}'.format(G.node[u]['atom_type'],order,G.node[v]['atom_type']))
-    return G, chem_line_graph(G)
+    return G
 
 def chem_line_graph(graph):
     #get line graph (vertx -> edge, edge -> vertex)

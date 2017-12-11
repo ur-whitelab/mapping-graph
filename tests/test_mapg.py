@@ -1,9 +1,10 @@
 import mapg
 import networkx as nx
 import operator
+
 def test_smiles2graph():
     '''Tests a basic conversion from smiles into a graph'''
-    graph, line_graph = mapg.smiles2graph('CO')
+    graph = mapg.smiles2graph('CO')
 
     #check that the atom number is correct
     assert(len(graph.nodes()) == 6)
@@ -27,20 +28,29 @@ def test_bond_equiv_classes():
     '''Tests if the function correctly identifies
     equivalent bonds'''
     #check the number of equivalent bonds with no local or global symmetry
-    graph1,line_graph1=mapg.smiles2graph('C(F)(Cl)Br')
-    equiv_bond_groups1=mapg.equiv_classes(graph1,line_graph1)
+    line_graph = mapg.chem_line_graph(mapg.smiles2graph('C(F)(Cl)Br'))
+    equiv_bond_groups1 = mapg.equiv_classes(line_graph)
     #Since there is no symmetry, all the four bonds will have their individual equivalence groups
     assert(len(equiv_bond_groups1)==4)
 
     #check number of bond classes in chloroacetone containing local symmetry
-    graph2, line_graph2=mapg.smiles2graph('CC(=O)CCl')
-    equiv_bond_groups2=mapg.equiv_classes(graph2,line_graph2)
-    assert(len(equiv_bond_groups2)==6)
+    line_graph2 = mapg.chem_line_graph(mapg.smiles2graph('CC(=O)CCl'))
+    equiv_bond_groups2 = mapg.equiv_classes(line_graph2)
+    assert(len(equiv_bond_groups2) == 6)
 
     #check number of bond classes in neopentane which displays global symmetry
-    graph3, line_graph3=mapg.smiles2graph('CC(C)(C)C')
-    equiv_bond_groups3=mapg.equiv_classes(graph3,line_graph3)
-    assert(len(equiv_bond_groups3)==2)
+    line_graph3 = mapg.chem_line_graph(mapg.smiles2graph('CC(C)(C)C'))
+    equiv_bond_groups3 = mapg.equiv_classes(line_graph3)
+    assert(len(equiv_bond_groups3) == 2)
 
 
+def test_atom_equiv_classes():
+    #test benzene (ring)
+    graph = mapg.smiles2graph('C1=CC=CC=C1')
+    equiv_atom_groups = mapg.equiv_classes(graph, node_key='atom_type', edge_key='bond')
+    assert( len(equiv_atom_groups) == 2)
 
+    #test toluene (sub ring)
+    graph = mapg.smiles2graph('CC1=CC=CC=C1')
+    equiv_atom_groups = mapg.equiv_classes(graph, node_key='atom_type', edge_key='bond')
+    assert( len(equiv_atom_groups) == 9)

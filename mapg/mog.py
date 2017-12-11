@@ -12,15 +12,16 @@ from networkx.drawing.nx_agraph import graphviz_layout
 
 class MOG:
     def __init__(self, smiles, symmetry=True):
-        self._G, self._LG = smiles2graph(smiles)
+        self._G = smiles2graph(smiles)
         self._graph = nx.DiGraph()
         self._graph.add_node(frozenset(self._G.nodes()), {'atom_number': len(self._G.nodes()),
                                                            'label': 'root'})
         self._symmetry = symmetry
         self._path_matrix = None
-    def build(self):
+        self._build()
+    def _build(self):
         #build the MOG
-        self._root = self._graph.nodes()[0]
+
 
         #create starting graph, which is quotient graph
         equiv_fxn = lambda a, b: False
@@ -41,9 +42,8 @@ class MOG:
 
         #agglomerate beads to finish out MOG
         self._agglomerate_layer(self._graph, self._G)
-        #connect top layer to the root
-        for n in self._node_layers[-2]:
-            self._graph.add_edge(self._root, n)
+        self._root = self._node_layers[-1][0]
+
 
     def _add_bead(self, nbunch, graph, mol):
         if nbunch is int:
@@ -71,6 +71,9 @@ class MOG:
     def __getitem__(self, index):
         return self._node_layers[index]
 
+    def __len__(self):
+        return len(self._node_layers)
+
     def _agglomerate_layer(self, graph, mol):
         nodes = self._node_layers[-1]
         new_nodes = set()
@@ -78,12 +81,11 @@ class MOG:
             for nj in nodes[i + 1:]:
                 if not ni.isdisjoint(nj):
                     nbunch = frozenset(ni | nj)
-                    if self._add_bead(nbunch, graph, mol):
-                        graph.add_edge(nbunch, ni)
-                        graph.add_edge(nbunch, nj)
-                        new_nodes.add(nbunch)
-        self._node_layers.append(list(new_nodes))
-        if len(new_nodes) > 1:
+                    graph.add_edge(nbunch, ni)
+                    graph.add_edge(nbunch, nj)
+                    new_nodes.add(nbunch)
+        if len(new_nodes) > 0:
+            self._node_layers.append(list(new_nodes))
             self._agglomerate_layer(graph, mol)
 
     def _build_path_matrix(self):
