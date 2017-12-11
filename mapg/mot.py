@@ -18,42 +18,68 @@ class MOT:
                                                            'label': 'root'})
         self._symmetry = symmetry
         self._tree = tree
+        self._path_matrix = None
     def build(self):
         #build the MOT
-        root = self._graph.nodes()[0]
+        self._root = self._graph.nodes()[0]
+
         #create starting graph, which is quotient graph
         equiv_fxn = lambda a, b: False
         if self._symmetry:
             equiv_fxn = equiv_function(equiv_classes(self._G, 'atom_type', 'bond'))
 
         qgraph = nx.algorithms.minors.quotient_graph(self._G, equiv_fxn)
-        self._graph.node[root]['atom_number'] = self._remove_bond(qgraph, self._G, root, symmetry=self._symmetry, tree=self._tree)
 
-    def _remove_bond(self, graph, mol, parent, recurse=True, symmetry=False, layer=0, tree=False):
-        #check for end
+        atom_beads = []
+        for n in qgraph:
+            self._add_bead(n, self._graph, self._G)
+            atom_beads.append(n)
+        self._node_layers = [atom_beads]
+        self._node_layers.append(self._remove_bond(qgraph, self._G))
+        self._agglomerate_layer(self._graph, self._G)
+        for n in self._node_layers[-2]:
+            self._graph.add_edge(self._root, n)
 
-        if len(graph) == 1:
-            return layer
-        for nbunch in graph:
-            atom_string = ','.join([mol.node[n]['atom_type'] for n in nbunch])
-            id_string = ','.join([str(n) for n in nbunch])
-            if nbunch not in self._graph:
-                self._graph.add_node(nbunch, {'atom_number': layer,
-                                            'label': atom_string + '\n' + id_string})
-            else:
-                self._graph.node[nbunch]['atom_number'] = min(self._graph.node[nbunch]['atom_number'], layer)
-        #now remove bond
+    def _add_bead(self, nbunch, graph, mol):
+        if nbunch is int:
+            nbunch = frozenset([nbunch])
+        atom_string = ','.join([self._G.node[n]['atom_type'] for n in nbunch])
+        id_string = ','.join([str(n) for n in nbunch])
+        if nbunch not in self._graph:
+                self._graph.add_node(nbunch, {'label': atom_string + '\n' + id_string})
+                return True
+        return False
+
+    def _remove_bond(self, graph, mol):
+        #now remove bonds
+        new_beads = []
         for bond in graph.edges():
-            _G = nx.contracted_edge(graph, bond, False)
-            #we need to relabel it with all of the component nodes
-            new_node = set(bond[0])
-            new_node |= set(bond[1])
-            nx.relabel_nodes(_G, {bond[0]: frozenset(new_node)}, copy=False)
-            if recurse:
-                last_layer = self._remove_bond(_G, mol, nbunch, recurse, symmetry, layer + 1, tree)
-            if tree:
-                break
-        return last_layer
+            nbunch = set(bond[0])
+            nbunch |= set(bond[1])
+            nbunch = frozenset(nbunch)
+            self._add_bead(nbunch, graph, mol)
+            self._graph.add_edge(nbunch, bond[0])
+            self._graph.add_edge(nbunch, bond[1])
+            new_beads.append(nbunch)
+        return new_beads
+
+    def __getitem__(self, index):
+        return self._node_layers[index]
+
+    def _agglomerate_layer(self, graph, mol):
+        nodes = self._node_layers[-1]
+        new_nodes = set()
+        for i,ni in enumerate(nodes):
+            for nj in nodes[i + 1:]:
+                if not ni.isdisjoint(nj):
+                    nbunch = frozenset(ni | nj)
+                    if self._add_bead(nbunch, graph, mol):
+                        graph.add_edge(nbunch, ni)
+                        graph.add_edge(nbunch, nj)
+                        new_nodes.add(nbunch)
+        self._node_layers.append(list(new_nodes))
+        if len(new_nodes) > 1:
+            self._agglomerate_layer(graph, mol)
 
     def prune_parents(self):
         '''Reduce the number of parents'''
@@ -84,22 +110,42 @@ class MOT:
                     self._graph.add_edge(n, c)
             #assert len(required ) == 0
 
-    def prune_nodes(self):
-        '''Remove nodes that have one parent and one child'''
-        success = True
-        while success:
-            to_del = []
-            for n in self._graph:
-                if len(self._graph.in_edges(n)) == 1 and len(self._graph.out_edges(n)) == 1:
-                    #add the edge now
-                    self._graph.add_edge(list(self._graph.in_edges(n))[0][0],
-                                        list(self._graph.out_edges(n))[0][1])
-                    to_del.append(n)
-            self._graph.remove_nodes_from(to_del)
-            success = len(to_del) > 0
+    def prune_orphans(self):
+        '''Treat nodes that have no path to root'''
+        self._build_path_matrix()
+        to_del = []
+        for n in self._graph:
+            if n not in self._path_map:
+                to_del.append(n)
+        self._graph.remove_nodes_from(to_del)
+        return len(to_del) > 0
 
-    def validate_path(self, path):
-        pass
+    def _build_path_matrix(self):
+        '''Build path matrix by exploring all root to child paths'''
+        if self._path_matrix is None:
+            self._path_matrix =[{self._root: 0}]
+            self._path_map = {self._root: 0}
+            path_matrix = self._build_path_matrix(self._root)
+
+    def _build_path_matrix(self, node):
+        if len(self._graph[node]) == 0:
+            return
+
+        for i,n in enumerate(self._graph.neighbors(node)):
+            # if we have more than 1 child, we're creating additional paths
+            if i > 0:
+                #duplicate current path
+                self._path_matrix.append(self._path_matrix[-1][:(self._path_map[node] + 1)])
+
+            # add new node to the mapping from node to index
+            self._path_map[n] = len(self._path_map)
+            # add new column to matrix
+            for i in range(len(path_matrix) - 1):
+                self._path_matrix[i].append(0)
+            # add the new 1 for the path which we're currently on
+            self._path_matrix[-1].append(1)
+            # descend
+            self._build_path_matrix(n)
 
     def draw(self, format='svg'):
         pos = graphviz_layout(self._graph, prog='dot', args='')

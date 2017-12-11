@@ -19,8 +19,9 @@ def start():
 def _mog(smiles, output, symmetry, tree):
     mot = MOT(smiles, symmetry, tree=False)
     mot.build()
-    mot.prune_parents()
-    mot.prune_nodes()
+    #mot.prune_parents()
+    #mot.prune_nodes()
+    #print(mot.prune_orphans)
     if output is not None:
         plot = mot.draw(format=output.split('.')[1])
         with open(output, 'wb') as f:
