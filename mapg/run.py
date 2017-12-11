@@ -1,4 +1,4 @@
-from .mot import MOT
+from .mog import MOG
 from .reading import smiles2graph, draw
 from .equiv import equiv_classes
 import fire
@@ -9,32 +9,28 @@ import pygraphviz
 from networkx.drawing.nx_agraph import graphviz_layout
 import random
 
+import warnings, matplotlib as mpl
+warnings.filterwarnings("ignore", category=mpl.mplDeprecation)
+warnings.filterwarnings("ignore", category=UserWarning)
+
 def start():
     fire.Fire({
-        'MOT': mot,
         'MOG': mog,
         'draw': draw_mol
     })
 
-def _mog(smiles, output, symmetry, tree):
-    mot = MOT(smiles, symmetry, tree=False)
-    mot.build()
-    #mot.prune_parents()
-    #mot.prune_nodes()
-    #print(mot.prune_orphans)
+def mog(smiles, output='mog.png', symmetry=True):
+    mog = MOG(smiles, symmetry)
+    mog.build()
     if output is not None:
-        plot = mot.draw(format=output.split('.')[1])
+        plot = mog.draw(format=output.split('.')[1])
         with open(output, 'wb') as f:
             f.write(plot)
-def mot(smiles, output='mot.svg', symmetry=True):
-    return _mog(smiles, output, symmetry, True)
-def mog(smiles, output='mog.svg', symmetry=True):
-    return _mog(smiles, output, symmetry, False)
 
-def draw_mol(smiles, output='molecule.svg', graph='graph.svg', line_graph='line_graph.svg'):
+
+def draw_mol(smiles, output='molecule.svg', graph=None, line_graph=None):
     G, LG = smiles2graph(smiles)
     bond_classes = equiv_classes(LG)
-    print(len(bond_classes))
     svg = draw(smiles, bond_classes, True)
     with open(output, 'w') as f:
         f.write(svg)
@@ -45,19 +41,21 @@ def draw_mol(smiles, output='molecule.svg', graph='graph.svg', line_graph='line_
         for j,ac in enumerate(atom_classes):
             if n in ac:
                 colors[i] = cmap(j)
-    pos = graphviz_layout(G, prog='neato')
-    plt.figure(figsize=(4,4))
-    nx.draw(G, pos, node_color=colors, labels={n: d['atom_type'] for n,d in G.nodes(data=True)})
-    plt.savefig(graph)
+    if graph is not None:
+        pos = graphviz_layout(G, prog='neato')
+        plt.figure(figsize=(4,4))
+        nx.draw(G, pos, node_color=colors, labels={n: d['atom_type'] for n,d in G.nodes(data=True)})
+        plt.savefig(graph)
 
-    colors = [None for n in LG]
-    for i,n in enumerate(LG):
-        for j,bc in enumerate(bond_classes):
-            if n in bc:
-                colors[i] = cmap(j)
-    pos = graphviz_layout(LG, prog='neato')
-    plt.figure(figsize=(4,4))
-    nx.draw(LG, pos, node_color=colors, labels={n: d['bond'] for n,d in LG.nodes(data=True)})
-    plt.savefig(line_graph)
+    if line_graph is not None:
+        colors = [None for n in LG]
+        for i,n in enumerate(LG):
+            for j,bc in enumerate(bond_classes):
+                if n in bc:
+                    colors[i] = cmap(j)
+        pos = graphviz_layout(LG, prog='neato')
+        plt.figure(figsize=(4,4))
+        nx.draw(LG, pos, node_color=colors, labels={n: d['bond'] for n,d in LG.nodes(data=True)})
+        plt.savefig(line_graph)
 
 

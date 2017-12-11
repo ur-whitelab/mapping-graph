@@ -10,17 +10,16 @@ import pygraphviz
 from networkx.drawing.nx_agraph import graphviz_layout
 
 
-class MOT:
-    def __init__(self, smiles, symmetry=True, tree=True):
+class MOG:
+    def __init__(self, smiles, symmetry=True):
         self._G, self._LG = smiles2graph(smiles)
         self._graph = nx.DiGraph()
         self._graph.add_node(frozenset(self._G.nodes()), {'atom_number': len(self._G.nodes()),
                                                            'label': 'root'})
         self._symmetry = symmetry
-        self._tree = tree
         self._path_matrix = None
     def build(self):
-        #build the MOT
+        #build the MOG
         self._root = self._graph.nodes()[0]
 
         #create starting graph, which is quotient graph
@@ -30,13 +29,19 @@ class MOT:
 
         qgraph = nx.algorithms.minors.quotient_graph(self._G, equiv_fxn)
 
+        #add atoms to MOG
         atom_beads = []
         for n in qgraph:
             self._add_bead(n, self._graph, self._G)
             atom_beads.append(n)
         self._node_layers = [atom_beads]
+
+        #contract edges on quotient graph
         self._node_layers.append(self._remove_bond(qgraph, self._G))
+
+        #agglomerate beads to finish out MOG
         self._agglomerate_layer(self._graph, self._G)
+        #connect top layer to the root
         for n in self._node_layers[-2]:
             self._graph.add_edge(self._root, n)
 
@@ -81,51 +86,12 @@ class MOT:
         if len(new_nodes) > 1:
             self._agglomerate_layer(graph, mol)
 
-    def prune_parents(self):
-        '''Reduce the number of parents'''
-        possible_children = self._graph.nodes()
-        possible_children.sort(key=lambda c: self._graph.node[c]['atom_number'], reverse=True)
-        last_layer = self._graph.nodes(data=True)[0][1]['atom_number']
-        layer_i = [None for _ in range(last_layer + 1)]
-        for i,n in enumerate(possible_children):
-            if last_layer != self._graph.node[n]['atom_number']:
-                last_layer = self._graph.node[n]['atom_number']
-                layer_i[last_layer] = i
-
-        for n,d in self._graph.nodes_iter(data=True):
-            #only keep edges that add to node set
-            atom_number = self._graph.node[n]['atom_number']
-            if atom_number == 0:
-                continue
-            #get the next lowest layer
-            atom_number -= 1
-            while layer_i[atom_number] is None:
-                atom_number -= 1
-            index = layer_i[atom_number]
-
-            required = set(n)
-            for c in possible_children[index:]:
-                if not required.isdisjoint(c):
-                    required -= c
-                    self._graph.add_edge(n, c)
-            #assert len(required ) == 0
-
-    def prune_orphans(self):
-        '''Treat nodes that have no path to root'''
-        self._build_path_matrix()
-        to_del = []
-        for n in self._graph:
-            if n not in self._path_map:
-                to_del.append(n)
-        self._graph.remove_nodes_from(to_del)
-        return len(to_del) > 0
-
     def _build_path_matrix(self):
         '''Build path matrix by exploring all root to child paths'''
         if self._path_matrix is None:
             self._path_matrix =[{self._root: 0}]
             self._path_map = {self._root: 0}
-            path_matrix = self._build_path_matrix(self._root)
+            self._build_path_matrix(self._root)
 
     def _build_path_matrix(self, node):
         if len(self._graph[node]) == 0:
