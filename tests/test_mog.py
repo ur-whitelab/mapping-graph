@@ -16,8 +16,7 @@ def test_layer_structure():
     mog = MOG('CCC', symmetry=True)
     for layer in mog:
         assert len(layer) > 0
-
-    assert len(layer[-1]) == 1
+    assert len(mog[-1]) == 1
 
 def test_known_mog():
     mog = MOG('CO', symmetry=True)
@@ -27,3 +26,6 @@ def test_known_mog():
     assert len(mog[2]) == 2
     assert len(mog[3]) == 1
 
+def test_drawing_mog():
+    mog = MOG('C1=CC=CC=C1')
+    svg = mog.draw()

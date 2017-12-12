@@ -19,10 +19,9 @@ class MOG:
         self._symmetry = symmetry
         self._path_matrix = None
         self._build()
+
     def _build(self):
         #build the MOG
-
-
         #create starting graph, which is quotient graph
         equiv_fxn = lambda a, b: False
         if self._symmetry:
@@ -81,9 +80,10 @@ class MOG:
             for nj in nodes[i + 1:]:
                 if not ni.isdisjoint(nj):
                     nbunch = frozenset(ni | nj)
+                    new_nodes.add(nbunch)
+                    self._add_bead(nbunch, graph, mol)
                     graph.add_edge(nbunch, ni)
                     graph.add_edge(nbunch, nj)
-                    new_nodes.add(nbunch)
         if len(new_nodes) > 0:
             self._node_layers.append(list(new_nodes))
             self._agglomerate_layer(graph, mol)
