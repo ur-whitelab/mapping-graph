@@ -45,3 +45,6 @@ def test_drawing_mog():
 
 def test_path_matrix():
     mog = MOG('CO', symmetry=True)
+    #validate paths are same size
+    for p in mog.path_matrix:
+        assert len(p) == len(mog.path_matrix[0])

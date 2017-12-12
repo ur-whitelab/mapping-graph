@@ -21,6 +21,7 @@ def start():
 
 def mog(smiles, output='mog.png', symmetry=True):
     mog = MOG(smiles, symmetry)
+    print(mog.path_matrix)
     if output is not None:
         plot = mog.draw(format=output.split('.')[1])
         with open(output, 'wb') as f:

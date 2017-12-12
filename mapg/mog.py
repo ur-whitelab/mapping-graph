@@ -16,6 +16,10 @@ class MOG:
     def graph(self):
         return self._graph
 
+    @property
+    def path_matrix(self):
+        return self._path_matrix
+
     def __init__(self, smiles, symmetry=True):
         self._G = smiles2graph(smiles)
         self._graph = nx.DiGraph()
@@ -65,7 +69,7 @@ class MOG:
         self._agglomerate_layer(self._graph, self._G)
         self._root = self._node_layers[-1][0]
         self._graph.node[self._root]['label'] = 'root'
-        #self._build_path_matrix()
+        self._build_path_matrix()
 
 
     def _add_bead(self, nbunch, graph, mol):
@@ -102,7 +106,7 @@ class MOG:
         new_nodes = set()
         for i,ni in enumerate(nodes):
             for nj in nodes[i + 1:]:
-                if len(ni - nj) == 1:
+                if len(ni - nj) == 1 and len(nj - ni) == 1:
                     nbunch = frozenset(ni | nj)
                     new_nodes.add(nbunch)
                     self._add_bead(nbunch, graph, mol)
@@ -115,20 +119,18 @@ class MOG:
     def _build_path_matrix(self):
         '''Build path matrix by exploring all root to child paths'''
         if self._path_matrix is None:
-            self._path_matrix =[[0]]
+            self._path_matrix =[[1]]
             self._path_map = {self._root: 0}
             self._build_path_layer(self._root)
 
     def _build_path_layer(self, node):
         if len(self._graph[node]) == 0:
             return
-
         for i,n in enumerate(self._graph.neighbors(node)):
             # if we have more than 1 child, we're creating additional paths
             if i > 0:
                 #duplicate current path
                 self._path_matrix.append(self._path_matrix[-1][:(self._path_map[node] + 1)])
-
             # add new node to the mapping from node to index
             self._path_map[n] = len(self._path_map)
             # add new column to matrix
