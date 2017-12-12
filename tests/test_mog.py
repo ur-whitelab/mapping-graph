@@ -18,6 +18,19 @@ def test_layer_structure():
         assert len(layer) > 0
     assert len(mog[-1]) == 1
 
+def test_mog_isdag():
+    mog = MOG('CO')
+    assert nx.algorithms.dag.is_directed_acyclic_graph(mog.graph)
+
+    mog = MOG('CC1=CC=CC=C1')
+    assert nx.algorithms.dag.is_directed_acyclic_graph(mog.graph)
+
+    mog = MOG('CCC')
+    assert nx.algorithms.dag.is_directed_acyclic_graph(mog.graph)
+
+    mog = MOG('CC')
+    assert nx.algorithms.dag.is_directed_acyclic_graph(mog.graph)
+
 def test_known_mog():
     mog = MOG('CO', symmetry=True)
     assert len(mog) == 4
@@ -29,3 +42,6 @@ def test_known_mog():
 def test_drawing_mog():
     mog = MOG('C1=CC=CC=C1')
     svg = mog.draw()
+
+def test_path_matrix():
+    mog = MOG('CO', symmetry=True)

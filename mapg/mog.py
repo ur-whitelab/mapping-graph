@@ -11,11 +11,14 @@ from networkx.drawing.nx_agraph import graphviz_layout
 
 
 class MOG:
+
+    @property
+    def graph(self):
+        return self._graph
+
     def __init__(self, smiles, symmetry=True):
         self._G = smiles2graph(smiles)
         self._graph = nx.DiGraph()
-        self._graph.add_node(frozenset(self._G.nodes()), {'atom_number': len(self._G.nodes()),
-                                                           'label': 'root'})
         self._symmetry = symmetry
         self._path_matrix = None
         self._build()
@@ -28,6 +31,25 @@ class MOG:
             equiv_fxn = equiv_function(equiv_classes(self._G, 'atom_type', 'bond'))
 
         qgraph = nx.algorithms.minors.quotient_graph(self._G, equiv_fxn)
+
+        self._label_map = {}
+        mapping = {}
+        for n in qgraph.nodes():
+            if len(n) > 1:
+                new_n = set()
+                new_n.add(n)
+                new_n = frozenset(new_n)
+                label = []
+                label.append('{{{}}}'.format(','.join(self._G.node[ni]['atom_type'] for ni in n)))
+                label.append('{{{}}}'.format(','.join([str(ni) for ni in n])))
+                self._label_map[n] = label
+                mapping[n] = new_n
+            else:
+                node = list(n)[0]
+                self._label_map[node] = [self._G.node[node]['atom_type'], str(node)]
+
+
+        nx.relabel_nodes(qgraph, mapping, copy=False)
 
         #add atoms to MOG
         atom_beads = []
@@ -42,13 +64,15 @@ class MOG:
         #agglomerate beads to finish out MOG
         self._agglomerate_layer(self._graph, self._G)
         self._root = self._node_layers[-1][0]
+        self._graph.node[self._root]['label'] = 'root'
+        #self._build_path_matrix()
 
 
     def _add_bead(self, nbunch, graph, mol):
         if nbunch is int:
             nbunch = frozenset([nbunch])
-        atom_string = ','.join([self._G.node[n]['atom_type'] for n in nbunch])
-        id_string = ','.join([str(n) for n in nbunch])
+        atom_string = ','.join([self._label_map[n][0] for n in nbunch])
+        id_string = ','.join([self._label_map[n][1] for n in nbunch])
         if nbunch not in self._graph:
                 self._graph.add_node(nbunch, {'label': atom_string + '\n' + id_string})
                 return True
@@ -61,10 +85,10 @@ class MOG:
             nbunch = set(bond[0])
             nbunch |= set(bond[1])
             nbunch = frozenset(nbunch)
-            self._add_bead(nbunch, graph, mol)
-            self._graph.add_edge(nbunch, bond[0])
-            self._graph.add_edge(nbunch, bond[1])
-            new_beads.append(nbunch)
+            if self._add_bead(nbunch, graph, mol):
+                self._graph.add_edge(nbunch, bond[0])
+                self._graph.add_edge(nbunch, bond[1])
+                new_beads.append(nbunch)
         return new_beads
 
     def __getitem__(self, index):
@@ -78,7 +102,7 @@ class MOG:
         new_nodes = set()
         for i,ni in enumerate(nodes):
             for nj in nodes[i + 1:]:
-                if not ni.isdisjoint(nj):
+                if len(ni - nj) == 1:
                     nbunch = frozenset(ni | nj)
                     new_nodes.add(nbunch)
                     self._add_bead(nbunch, graph, mol)
@@ -91,11 +115,11 @@ class MOG:
     def _build_path_matrix(self):
         '''Build path matrix by exploring all root to child paths'''
         if self._path_matrix is None:
-            self._path_matrix =[{self._root: 0}]
+            self._path_matrix =[[0]]
             self._path_map = {self._root: 0}
-            self._build_path_matrix(self._root)
+            self._build_path_layer(self._root)
 
-    def _build_path_matrix(self, node):
+    def _build_path_layer(self, node):
         if len(self._graph[node]) == 0:
             return
 
@@ -108,12 +132,12 @@ class MOG:
             # add new node to the mapping from node to index
             self._path_map[n] = len(self._path_map)
             # add new column to matrix
-            for i in range(len(path_matrix) - 1):
+            for i in range(len(self._path_matrix) - 1):
                 self._path_matrix[i].append(0)
             # add the new 1 for the path which we're currently on
             self._path_matrix[-1].append(1)
             # descend
-            self._build_path_matrix(n)
+            self._build_path_layer(n)
 
     def draw(self, format='svg'):
         pos = graphviz_layout(self._graph, prog='dot', args='')
