@@ -119,27 +119,37 @@ class MOG:
     def _build_path_matrix(self):
         '''Build path matrix by exploring all root to child paths'''
         if self._path_matrix is None:
-            self._path_matrix =[[1]]
-            self._path_map = {self._root: 0}
+            #reverse index so that root is start of paths
+            self._path_map = {k: len(self._graph) - i - 1 for i,k in enumerate(self._graph.nodes())}
+            self._path_matrix =[[0 for _ in range(len(self._graph))]]
             self._build_path_layer(self._root)
 
-    def _build_path_layer(self, node):
+    def _build_path_layer(self, node, index = 0):
+
+        self._path_matrix[index][self._path_map[node]] = 1
+
         if len(self._graph[node]) == 0:
             return
+
         for i,n in enumerate(self._graph.neighbors(node)):
             # if we have more than 1 child, we're creating additional paths
-            if i > 0:
+            new_index = index
+            #save modifying the original path for last
+            if i != len(self._graph.neighbors(node)) - 1:
                 #duplicate current path
-                self._path_matrix.append(self._path_matrix[-1][:])
-            # add new node to the mapping from node to index
-            self._path_map[n] = len(self._path_map)
-            # add new column to matrix
-            for i in range(len(self._path_matrix) - 1):
-                self._path_matrix[i].append(0)
-            # add the new 1 for the path which we're currently on
-            self._path_matrix[-1].append(1)
+                self._path_matrix.append(self._path_matrix[index][:])
+                new_index = len(self._path_matrix) - 1
+
             # descend
-            self._build_path_layer(n)
+            self._build_path_layer(n, new_index)
+
+    def print_path(self, p):
+        inv_map = {v: k for k, v in self._path_map.items()}
+        path_str = ''
+        for i,pi in enumerate(p):
+            if pi == 1:
+                path_str += '(' + self._graph.node[inv_map[i]]['label'].split('\n')[0] + ')-'
+        print(path_str[:-1])#omit final dash
 
     def draw(self, format='svg'):
         pos = graphviz_layout(self._graph, prog='dot', args='')
@@ -148,7 +158,7 @@ class MOG:
             nx.draw(self._graph, pos, labels={n: d['label'] for n,d in self._graph.nodes_iter(data=True)},
                 node_size=5000)
         else:
-            nx.draw(self._graph, pos)
+            nx.draw(self._graph, pos, index + 1)
         with io.BytesIO() as output:
             fig.savefig(output, format=format)
             fig.clf()

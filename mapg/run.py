@@ -19,9 +19,11 @@ def start():
         'draw': draw_mol
     })
 
-def mog(smiles, output='mog.png', symmetry=True):
+def mog(smiles, output='mog.png', symmetry=True, paths=False):
     mog = MOG(smiles, symmetry)
-    print(mog.path_matrix)
+    if paths:
+        for p in mog.path_matrix:
+            mog.print_path(p)
     if output is not None:
         plot = mog.draw(format=output.split('.')[1])
         with open(output, 'wb') as f:
