@@ -130,7 +130,7 @@ class MOG:
             # if we have more than 1 child, we're creating additional paths
             if i > 0:
                 #duplicate current path
-                self._path_matrix.append(self._path_matrix[-1][:(self._path_map[node] + 1)])
+                self._path_matrix.append(self._path_matrix[-1][:])
             # add new node to the mapping from node to index
             self._path_map[n] = len(self._path_map)
             # add new column to matrix
