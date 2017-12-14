@@ -1,5 +1,5 @@
 from .mog import MOG
-from .reading import smiles2graph, draw
+from .reading import smiles2graph, draw, chem_line_graph
 from .equiv import equiv_classes
 import fire
 import networkx as nx
@@ -15,12 +15,14 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 def start():
     fire.Fire({
+        
         'MOG': mog,
         'draw': draw_mol
     })
 
 def mog(smiles, output='mog.png', symmetry=True, paths=False):
     mog = MOG(smiles, symmetry)
+    #print(len(mog),len(smiles2graph(smiles)))
     if paths:
         for p in mog.path_matrix:
             mog.print_path(p)
@@ -31,7 +33,8 @@ def mog(smiles, output='mog.png', symmetry=True, paths=False):
 
 
 def draw_mol(smiles, output='molecule.svg', graph=None, line_graph=None):
-    G, LG = smiles2graph(smiles)
+    G=smiles2graph(smiles)
+    LG= chem_line_graph(G)
     bond_classes = equiv_classes(LG)
     svg = draw(smiles, bond_classes, True)
     with open(output, 'w') as f:
