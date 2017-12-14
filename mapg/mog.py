@@ -6,6 +6,7 @@ plt.switch_backend('agg')
 import io
 
 import networkx as nx
+import numpy as np
 import pygraphviz
 from networkx.drawing.nx_agraph import graphviz_layout
 
@@ -120,9 +121,25 @@ class MOG:
         '''Build path matrix by exploring all root to child paths'''
         if self._path_matrix is None:
             #reverse index so that root is start of paths
-            self._path_map = {k: len(self._graph) - i - 1 for i,k in enumerate(self._graph.nodes())}
+            self._path_map = {k: i for i,k in enumerate(self[0])}
+            index = len(self._path_map)
+            for n in self._graph.nodes():
+                if n not in self._path_map:
+                    self._path_map[n] = index
+                    index += 1
+            #self._path_map = {k: len(self._graph) - i - 1 for i,k in enumerate(self._graph.nodes())}
             self._path_matrix =[[0 for _ in range(len(self._graph))]]
             self._build_path_layer(self._root)
+            #make OR operated path_layer
+            self._path_valid_matrix = np.zeros( (len(self[0]), len(self._graph)), dtype=np.int32)
+            for child in self[0]:
+                for path in self._path_matrix:
+                    if path[self._path_map[child]] == 1:
+                        #in theory, the keys for the atom
+                        #nodes should start at 0 so there is no index error
+                        self._path_valid_matrix[self._path_map[child]] += path
+            #convert from integers to 0/1 indicators
+            self._path_valid_matrix = self._path_valid_matrix == 1
 
     def _build_path_layer(self, node, index = 0):
 
