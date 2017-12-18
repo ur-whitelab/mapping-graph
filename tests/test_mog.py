@@ -48,3 +48,11 @@ def test_path_matrix():
     #validate paths are same size
     for p in mog.path_matrix:
         assert len(p) == len(mog.path_matrix[0])
+
+def test_timeout():
+    try:
+        mog = MOG('CC1=CC=CC=C1', symmetry=False, build_timeout=1)
+        assert False, 'Did not throw timeout'
+    except MOG.TimeoutError:
+        pass
+

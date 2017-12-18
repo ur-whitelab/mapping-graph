@@ -9,8 +9,28 @@ import networkx as nx
 import numpy as np
 import pygraphviz
 from networkx.drawing.nx_agraph import graphviz_layout
+import errno, os, signal, functools
 
+def _timeout(timeout_name, error_message=os.strerror(errno.ETIME)):
+    '''A timeout decorator that will evaluate class variable for timeout duration'''
+    def decorator(func):
+        def _handle_timeout(signum, frame):
+            raise MOG.TimeoutError(error_message)
 
+        def wrapper(self, *args, **kwargs):
+            seconds =  getattr(self, timeout_name)
+            if seconds is not None:
+                signal.signal(signal.SIGALRM, _handle_timeout)
+                signal.alarm(seconds)
+            try:
+                result = func(self, *args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return functools.wraps(func)(wrapper)
+
+    return decorator
 class MOG:
 
     @property
@@ -21,13 +41,18 @@ class MOG:
     def path_matrix(self):
         return self._path_matrix
 
-    def __init__(self, smiles, symmetry=True):
+    def __init__(self, smiles, symmetry=True, build_timeout=None):
         self._G = smiles2graph(smiles)
         self._graph = nx.DiGraph()
         self._symmetry = symmetry
         self._path_matrix = None
+        self._build_timeout = build_timeout
         self._build()
 
+    class TimeoutError(Exception):
+        pass
+
+    @_timeout('_build_timeout')
     def _build(self):
         #build the MOG
         #create starting graph, which is quotient graph
