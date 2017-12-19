@@ -17,7 +17,8 @@ def start():
     fire.Fire({
         
         'MOG': mog,
-        'draw': draw_mol
+        'draw': draw_mol,
+        'count': count
     })
 
 def mog(smiles, output='mog.png', symmetry=True, paths=False):
@@ -30,6 +31,38 @@ def mog(smiles, output='mog.png', symmetry=True, paths=False):
         plot = mog.draw(format=output.split('.')[1])
         with open(output, 'wb') as f:
             f.write(plot)
+def count(smilesdata, output='compression.png',timeout=5,symmetry=True):
+    x=[]
+    compression=[]
+    counter=0
+    with open(smilesdata) as infile:
+        for line in infile:
+            smiles=line.split()[1]
+            G= smiles2graph(smiles)
+            atom_classes=equiv_classes(G,node_key='atom_type',edge_key='bond')
+            #print(G.number_of_edges(),len(atom_classes))
+            if (G.number_of_edges()==0) or (len(atom_classes)==1):
+                continue
+            try:
+                mog = MOG(smiles,symmetry,timeout)
+            except MOG.TimeoutError:                
+                print(smiles)
+                continue
+            LG=chem_line_graph(G)
+            bond_classes = equiv_classes(LG)
+            comp_ratio=len(mog.graph)/float(2**len(bond_classes)-1)
+            if comp_ratio >=1:
+                #print('compression ratio',comp_ratio)
+                counter+=1
+            x.append(G.number_of_nodes())
+            compression.append(comp_ratio)
+    x_bins=max(x)-min(x)
+    y_bins=(max(compression)-min(compression))*10
+    plt.hist2d(x, compression, bins=(x_bins,y_bins),cmap='Blues')
+    plt.colorbar()
+    #print('counter', counter)
+    #plt.scatter(x,compression,c='b',alpha=0.5)        
+    plt.savefig(output,format='png')
 
 
 def draw_mol(smiles, output='molecule.svg', graph=None, line_graph=None):
