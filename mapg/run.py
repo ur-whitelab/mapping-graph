@@ -2,6 +2,7 @@ from .mog import MOG
 from .reading import smiles2graph, draw, chem_line_graph
 from .equiv import equiv_classes
 import fire
+import rdkit
 import networkx as nx
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
@@ -36,11 +37,18 @@ def count(smilesdata, output='lib_data.txt',timeout=5,symmetry=True):
     compression=[]
     counter=0
     f=open(output,"w")
-    f.write('#SMILES atom_number bond_number bell_number naive_count starsbars symmetry_count MOG_nodes \n')
+    f.write('#SMILES heavy_atoms bond_number bell_number naive_count starsbars symmetry_count MOG_nodes \n')
     with open(smilesdata) as infile:
         for line in infile:
             smiles=line.split()[1]
-            G= smiles2graph(smiles)
+            #print(smiles)
+            try:
+                G= smiles2graph(smiles)
+            
+            except:
+                continue
+            mol=rdkit.Chem.MolFromSmiles(smiles)
+            heavy_atoms=mol.GetNumHeavyAtoms()
             atoms=len(G)
             edges=G.number_of_edges()
             LG=chem_line_graph(G)
@@ -58,9 +66,9 @@ def count(smilesdata, output='lib_data.txt',timeout=5,symmetry=True):
                 continue
             try:
                 mog = MOG(smiles,symmetry,timeout)
-                f.write('{smiles} {atom_number} {bond_number} {bell} {naive} {starsbars} {symmetric} {mog_nodes} \n'.
+                f.write('{smiles} {h_atoms} {bond_number} {bell} {naive} {starsbars} {symmetric} {mog_nodes} \n'.
                         format(smiles=smiles,
-                               atom_number=atoms,
+                               h_atoms=heavy_atoms,
                                bond_number=edges,
                                bell=bellnum, 
                                naive=naive_count, 
@@ -68,9 +76,9 @@ def count(smilesdata, output='lib_data.txt',timeout=5,symmetry=True):
                                symmetric=symmetric_counts,
                                mog_nodes=len(mog.graph)))
             except MOG.TimeoutError:                
-                f.write('{smiles} {atom_number} {bond_number} {bell} {naive} {starsbars} {symmetric} {mog_nodes} \n'.
+                f.write('{smiles} {h_atoms} {bond_number} {bell} {naive} {starsbars} {symmetric} {mog_nodes} \n'.
                         format(smiles=smiles,
-                               atom_number=atoms,
+                               h_atoms=heavy_atoms,
                                bond_number=edges,
                                bell=bellnum, 
                                naive=naive_count, 
