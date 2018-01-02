@@ -8,24 +8,21 @@ def binary_gauss_elim(A, b=None):
     '''
     if b is None:
         b = np.ones((A.shape[0], 1))
-    print(b.shape)
-    print(A.shape)
-    Q = np.concatenate( (A, b), axis=1)
-    print(Q)
+    Q = np.concatenate( (A, b), axis=1) == 1
     n,m = A.shape
     # iterate over columns
-    for j in range(m):
+    for j in range(min(n,m)):
         # find first non-zero element to act as pivot row
-        i = np.argmax(A[:, j])
+        i = np.argmax(Q[j:, j]) + j
         # check if we found a non-zero
-        if A[i, j] == 1:
-            print(i)
+        if Q[i, j]:
+            #swap rows
+            Q[j,:], Q[i,:] = Q[i,:], Q[j,:]
             # perform column addition
-            for k in range(m):
-                if k != j and A[i,k] == 1:
-                    Q[:, k] += Q[:, j]
-                    Q[:, k] %= 2
-    return Q
+            for k in range(n):
+                if k != j and Q[k,j]:
+                    Q[k, :] ^= Q[j,:]
+    return Q[:,:-1]
 
 def binary_is_row_echelon(A):
     n,m = A.shape
