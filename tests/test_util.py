@@ -48,9 +48,6 @@ def test_binary_row_echelon():
     assert not binary_is_row_echelon(A), '2x5 reversed leading coefficients'
 
 def test_binary_guass_elim_examples():
-    A = np.zeros( (5, 4) )
-    assert binary_is_row_echelon(binary_gauss_elim(A)), 'Trivial 5x4 zero matrix'
-
     A = np.identity(5)
     assert binary_is_row_echelon(binary_gauss_elim(A)), '5 Identity matrix'
 
@@ -67,3 +64,20 @@ def test_binary_guass_elim_examples():
     A[2, 0] = 1
     A[2, 4] = 1
     assert binary_is_row_echelon(binary_gauss_elim(A)), 'non-square 3x5'
+
+def test_binary_solve():
+    #      0
+    #     / \
+    #    0   0
+    #   / \ / \
+    #  0   0   0
+    A = np.array([
+        [1,1,0,1,0,0],
+        [1,1,1,0,1,0],
+        [1,0,1,0,0,1]
+    ])
+    print(A * 1)
+    solutions = binary_solve(A)
+    for s in solutions:
+        print(s)
+    assert False
