@@ -52,9 +52,7 @@ def binary_is_row_echelon(A):
 def binary_solve(A):
     '''List solutions of given matrix where Ax = 1'''
     Q = binary_gauss_elim(A)
-    print('you called this function')
     #now substitute to get solutions
-    print(Q * 1)
     N = Q.shape[1] - 1 # - 1 for solution column
     set_mask = np.zeros(N) == 1
     row_equations = [(np.zeros(N) == 1 for _ in range(1))] # these should yield a bit vector of the solution
@@ -62,34 +60,43 @@ def binary_solve(A):
         #iterate over row equations backwards
         if np.sum(Q[k, :-1]):
             # non-zero
-
-            # find number of free bits
-            free = np.sum(set_mask & Q[k, :-1])
-
             #create generator of solutions for this row
-            def row_solution(parent_equation):
+            # need to bind these values so they are passed
+            def row_solution(k, parent_equation, set_mask, free):
+                print('you have called row solution on row', k, 'free', free, 'set_mask', set_mask)
                 for s in parent_equation:
-                    print(s)
                     # parity in this row will change based on set bits in solution
                     # get set solution bits which are used in this row
                     # the parity of those changes the parity of this row equation
+                    # s & ~set_mask -> solutions which are set
+                    # solutions which are set & Q[k, :-1] -> solutions which are set and in equation
+                    # solutions which are set and in equation ^ Q[k,-1] -> compute change to parity
                     row_parity = bitarray_parity(s & set_mask & Q[k, :-1]) ^ Q[k, -1]
                     # enumerate free variables restricted by their parity
                     for row_value in enumerate_parity(free, row_parity):
                         # convert those to solutions
-                        row_solution = expand_list(bitfield(row_value), set_mask & Q[k, :-1])
+                        # expand list to be only unset solutions in equation
+                        solution = expand_list(bitfield(row_value), ~set_mask & Q[k, :-1])
                         #combine our set solution variables with previous row
-                        yield np.array(row_solution) == 1 | s
-            #update set mask
-            set_mask |= Q[k, :-1]
+                        print('row', k, 'row value', row_value, 'parity', row_parity, 'unmod parity', Q[k, -1], solution, set_mask, Q[k, :-1], ~set_mask & Q[k, :-1])
+                        print('combined solution', (np.array(solution) == 1 | s) * 1)
+                        yield np.array(solution) == 1 | s
+
 
             #instantiate and append generator evaluated in this context
+            # find number of free bits
+            free = np.sum(~set_mask & Q[k, :-1])
+            print('before append', free, Q[k,:-1], set_mask)
             if free > 0:
-                row_equations.append(row_solution(row_equations[-1]))
+                row_equations.append(row_solution(k, row_equations[-1], np.copy(set_mask), free))
+                #update set mask
+                print(set_mask, Q[k, :-1])
+                set_mask |= Q[k, :-1]
+                print(set_mask, 'after')
+
     #generators are all chained together, so only outter one need be generated
     print(row_equations)
     solutions = [s for s in row_equations[-1]]
-    print(solutions)
     return solutions
 
 def expand_list(values, mask):
@@ -97,8 +104,12 @@ def expand_list(values, mask):
     j = 0
     for i,m in enumerate(mask):
         if m:
-            result[i] = values[j]
-            j += 1
+            if j == len(values):
+                result[i] = 0
+            else:
+                result[i] = values[j]
+                j += 1
+    return result
 
 def bitfield(n):
     '''convert an integer into a list of bits'''
@@ -107,14 +118,10 @@ def bitfield(n):
 def enumerate_parity( nbits, set_parity ):
     '''I have no idea how to do this so I just brute force it'''
     value = 0
-    if isinstance(set_parity, types.GeneratorType):
-        sp = yield from set_parity
-    else:
-        sp = set_parity
     while value < 2**nbits:
-        value += 1
-        if parity(value) == sp:
+        if parity(value) == set_parity:
             yield value
+        value += 1
 
 def bitarray_parity( n ):
     return np.sum(n) % 2
@@ -122,6 +129,6 @@ def bitarray_parity( n ):
 def parity( n ):
     parity = 0
     while n:
-        parity = ~parity
+        parity = 1 ^ parity
         n = n & (n - 1)
     return parity

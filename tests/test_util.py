@@ -79,5 +79,5 @@ def test_binary_solve():
     print(A * 1)
     solutions = binary_solve(A)
     for s in solutions:
-        print(s)
+        print(s * 1)
     assert False
