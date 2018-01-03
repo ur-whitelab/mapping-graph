@@ -65,6 +65,7 @@ def binary_solve(A):
             def row_solution(k, parent_equation, set_mask, free):
                 print('you have called row solution on row', k, 'free', free, 'set_mask', set_mask)
                 for s in parent_equation:
+                    print('recievied solution', s * 1, 'in row', k)
                     # parity in this row will change based on set bits in solution
                     # get set solution bits which are used in this row
                     # the parity of those changes the parity of this row equation
@@ -78,9 +79,10 @@ def binary_solve(A):
                         # expand list to be only unset solutions in equation
                         solution = expand_list(bitfield(row_value), ~set_mask & Q[k, :-1])
                         #combine our set solution variables with previous row
-                        print('row', k, 'row value', row_value, 'parity', row_parity, 'unmod parity', Q[k, -1], solution, set_mask, Q[k, :-1], ~set_mask & Q[k, :-1])
-                        print('combined solution', (np.array(solution) == 1 | s) * 1)
-                        yield np.array(solution) == 1 | s
+                        print('row', k, 'row value', row_value, 'parity', row_parity, 'unmod parity',
+                        Q[k, -1], 'solution', np.array(solution) == 1, 'set', set_mask * 1, 'row', Q[k, :-1] * 1, 'free', (~set_mask & Q[k, :-1]) * 1)
+                        print('combined solution for ', k, 's', s, 'combined', ((np.array(solution) == 1) | s) * 1)
+                        yield (np.array(solution) == 1) | s
 
 
             #instantiate and append generator evaluated in this context
