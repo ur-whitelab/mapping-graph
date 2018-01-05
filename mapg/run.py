@@ -5,6 +5,7 @@ import fire
 import rdkit
 import networkx as nx
 import matplotlib.pyplot as plt
+import numpy as np
 plt.switch_backend('agg')
 import pygraphviz
 from networkx.drawing.nx_agraph import graphviz_layout
@@ -32,59 +33,69 @@ def mog(smiles, output='mog.png', symmetry=True, paths=False):
         plot = mog.draw(format=output.split('.')[1])
         with open(output, 'wb') as f:
             f.write(plot)
-def count(smilesdata, output='lib_data.txt',timeout=5,symmetry=True):
-    x=[]
-    compression=[]
-    counter=0
+def count(smilesdata, output='lib_data.txt',timeout=5,symmetry=True, sample_size=8000):
+    x = []
+    compression = []
+    #counter = 0
+    line_count = 0
+    #sample_size=int(sample_size)
+    for file_lines in open(smilesdata).readlines(): line_count += 1
+    
+    if line_count <= sample_size:
+        sample_idx = np.arange(line_count)
+    else:
+        sample_idx=np.random.choice(line_count,sample_size,replace=False)
     f=open(output,"w")
     f.write('#SMILES heavy_atoms bond_number bell_number naive_count starsbars symmetry_count MOG_nodes \n')
     with open(smilesdata) as infile:
-        for line in infile:
-            smiles=line.split()[1]
+        for counter,line in enumerate(infile):
+            if counter not in sample_idx:
+                continue
+            smiles = line.split()[1]
             #print(smiles)
             try:
-                G= smiles2graph(smiles)
+                G = smiles2graph(smiles)
             
             except:
                 continue
-            mol=rdkit.Chem.MolFromSmiles(smiles)
-            heavy_atoms=mol.GetNumHeavyAtoms()
-            atoms=len(G)
-            edges=G.number_of_edges()
-            LG=chem_line_graph(G)
+            mol = rdkit.Chem.MolFromSmiles(smiles)
+            heavy_atoms = mol.GetNumHeavyAtoms()
+            atoms = len(G)
+            edges = G.number_of_edges()
+            LG = chem_line_graph(G)
             bond_classes = equiv_classes(LG)
-            atom_classes=equiv_classes(G,node_key='atom_type',edge_key='bond')
-            bellnum=bell(atoms)-1
-            naive_count=(2**edges)-1
-            product=1
+            atom_classes = equiv_classes(G,node_key='atom_type',edge_key='bond')
+            bellnum = bell(atoms)-1
+            naive_count = (2**edges)-1
+            product = 1
             for i in range(len(bond_classes)):
-                product*=(len(bond_classes[i])+1)
-            stars_bars=product-1
-            symmetric_counts=(2**(len(bond_classes)))-1
+                product *= (len(bond_classes[i])+1)
+            stars_bars = product-1
+            symmetric_counts = (2**(len(bond_classes)))-1
             #print(G.number_of_edges(),len(atom_classes))
-            if (edges==0) or (len(atom_classes)==1):
+            if (edges == 0) or (len(atom_classes) == 1):
                 continue
             try:
                 mog = MOG(smiles,symmetry,timeout)
                 f.write('{smiles} {h_atoms} {bond_number} {bell} {naive} {starsbars} {symmetric} {mog_nodes} \n'.
-                        format(smiles=smiles,
-                               h_atoms=heavy_atoms,
-                               bond_number=edges,
-                               bell=bellnum, 
-                               naive=naive_count, 
-                               starsbars=stars_bars, 
-                               symmetric=symmetric_counts,
-                               mog_nodes=len(mog.graph)))
+                        format(smiles = smiles,
+                               h_atoms = heavy_atoms,
+                               bond_number = edges,
+                               bell = bellnum, 
+                               naive = naive_count, 
+                               starsbars = stars_bars, 
+                               symmetric = symmetric_counts,
+                               mog_nodes = len(mog.graph)))
             except MOG.TimeoutError:                
                 f.write('{smiles} {h_atoms} {bond_number} {bell} {naive} {starsbars} {symmetric} {mog_nodes} \n'.
-                        format(smiles=smiles,
-                               h_atoms=heavy_atoms,
-                               bond_number=edges,
-                               bell=bellnum, 
-                               naive=naive_count, 
-                               starsbars=stars_bars, 
-                               symmetric=symmetric_counts,
-                               mog_nodes='NA'))
+                        format(smiles = smiles,
+                               h_atoms = heavy_atoms,
+                               bond_number = edges,
+                               bell = bellnum, 
+                               naive = naive_count, 
+                               starsbars = stars_bars, 
+                               symmetric = symmetric_counts,
+                               mog_nodes = 'NA'))
                 continue
             
     f.close()
