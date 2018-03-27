@@ -1,14 +1,15 @@
 import numpy as np
 import types
 
-def binary_gauss_elim(A, b=None):
+def integer_gauss_elim(A, b=None):
     '''
-    GF(2) Gaussian elimination.
+    Gaussian elmination for non-square.
     '''
     if b is None:
         b = np.ones((A.shape[0], 1))
     Q = np.concatenate( (A, b), axis=1) == 1
     n,m = A.shape
+
     # iterate over columns
     for j in range(min(n,m)):
         # find first non-zero element to act as pivot row
@@ -25,7 +26,7 @@ def binary_gauss_elim(A, b=None):
                     Q[k, :] ^= Q[j,:]
     return Q
 
-def binary_is_row_echelon(A):
+def integer_is_row_echelon(A):
     n,m = A.shape
     # check zero rows are after non-zero rows
     nonzero = True
@@ -38,7 +39,7 @@ def binary_is_row_echelon(A):
     # check leading coefficients are to the right of previous
     leading_j = -1
     for i in range(n):
-        # assumes 0/1
+        # assumes all positve
         j = np.argmax(A[i, :])
         # in zero rows?
         if A[i,j] == 0:
@@ -49,9 +50,10 @@ def binary_is_row_echelon(A):
         leading_j = j
     return True
 
-def binary_solve(A):
+def integer_solve(A):
     '''List solutions of given matrix where Ax = 1'''
-    Q = binary_gauss_elim(A)
+    Q = integer_gauss_elim(A)
+    print('Q = ', Q * 1)
     #now substitute to get solutions
     N = Q.shape[1] - 1 # - 1 for solution column
     set_mask = np.zeros(N) == 1
@@ -71,8 +73,8 @@ def binary_solve(A):
                     # the parity of those changes the parity of this row equation
                     # s & ~set_mask -> solutions which are set
                     # solutions which are set & Q[k, :-1] -> solutions which are set and in equation
-                    # solutions which are set and in equation ^ Q[k,-1] -> compute change to parity
-                    row_parity = bitarray_parity(s & set_mask & Q[k, :-1]) ^ Q[k, -1]
+                    # solutions which are set and in equation + Q[k,-1] -> sum
+                    row_parity = np.sum(s & set_mask & Q[k, :-1]) + Q[k, -1]
                     # enumerate free variables restricted by their parity
                     for row_value in enumerate_parity(free, row_parity):
                         # convert those to solutions
@@ -80,7 +82,7 @@ def binary_solve(A):
                         solution = expand_list(bitfield(row_value), ~set_mask & Q[k, :-1])
                         #combine our set solution variables with previous row
                         print('row', k, 'row value', row_value, 'parity', row_parity, 'unmod parity',
-                        Q[k, -1], 'solution', np.array(solution) == 1, 'set', set_mask * 1, 'row', Q[k, :-1] * 1, 'free', (~set_mask & Q[k, :-1]) * 1)
+                        Q[k, -1] * 1, 'solution', np.array(solution), 'set', set_mask * 1, 'row', Q[k, :-1] * 1, 'free', (~set_mask & Q[k, :-1]) * 1)
                         print('combined solution for ', k, 's', s, 'combined', ((np.array(solution) == 1) | s) * 1)
                         yield (np.array(solution) == 1) | s
 
@@ -125,12 +127,13 @@ def enumerate_parity( nbits, set_parity ):
             yield value
         value += 1
 
+
 def bitarray_parity( n ):
-    return np.sum(n) % 2
+    return np.sum(n) #% 2
 
 def parity( n ):
     parity = 0
     while n:
-        parity = 1 ^ parity
+        parity += 1
         n = n & (n - 1)
     return parity
