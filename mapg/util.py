@@ -7,23 +7,30 @@ def integer_gauss_elim(A, b=None):
     '''
     if b is None:
         b = np.ones((A.shape[0], 1))
-    Q = np.concatenate( (A, b), axis=1) == 1
-    n,m = A.shape
+    Q = np.concatenate( (A, b), axis=1).astype(np.int)
+    m,n = Q.shape
+    h,k = 0,0
 
-    # iterate over columns
-    for j in range(min(n,m)):
+    #gelim from wikipedia...hope we're lucky!
+    while h < m and k < n:
         # find first non-zero element to act as pivot row
-        i = np.argmax(Q[j:, j]) + j
+        p = np.argmax(np.abs(Q[h:, k])) + h
         # check if we found a non-zero
-        if Q[i, j]:
+        if Q[p, k]:
             #swap rows
-            tmp = np.copy(Q[j, :])
-            Q[j, :] = Q[i, :]
-            Q[i, :] = tmp
-            # perform column addition
-            for k in range(n):
-                if k != j and Q[k,j]:
-                    Q[k, :] ^= Q[j,:]
+            tmp = np.copy(Q[h, :])
+            Q[h, :] = Q[p, :]
+            Q[p, :] = tmp
+            #modify rows below pivot
+            for i in range(h + 1, m):
+                f = Q[i, k] // Q[h, k]
+                Q[i, k] = 0
+                for j in range(k + 1, n):
+                    Q[i, j] -= Q[k, j] * f
+            h += 1
+            k += 1
+        else:
+            k += 1
     return Q
 
 def integer_is_row_echelon(A):
@@ -39,8 +46,7 @@ def integer_is_row_echelon(A):
     # check leading coefficients are to the right of previous
     leading_j = -1
     for i in range(n):
-        # assumes all positve
-        j = np.argmax(A[i, :])
+        j = np.argmax(np.abs(A[i, :]))
         # in zero rows?
         if A[i,j] == 0:
             break
@@ -50,90 +56,69 @@ def integer_is_row_echelon(A):
         leading_j = j
     return True
 
-def integer_solve(A):
+def integer_solve(A, debug=False):
     '''List solutions of given matrix where Ax = 1'''
     Q = integer_gauss_elim(A)
-    print('Q = ', Q * 1)
+    if debug:
+        print('Q = ', Q * 1)
     #now substitute to get solutions
     N = Q.shape[1] - 1 # - 1 for solution column
-    set_mask = np.zeros(N) == 1
+    set_mask = np.zeros(N + 1) == 1
+    set_mask[-1] = True #answer is set
     row_equations = [(np.zeros(N) == 1 for _ in range(1))] # these should yield a bit vector of the solution
     for k in range(Q.shape[0] - 1, -1, -1):
         #iterate over row equations backwards
-        if np.sum(Q[k, :-1]):
+        if np.sum(np.abs(Q[k, :-1])):
             # non-zero
             #create generator of solutions for this row
             # need to bind these values so they are passed
-            def row_solution(k, parent_equation, set_mask, free):
-                print('you have called row solution on row', k, 'free', free, 'set_mask', set_mask)
+            def row_solution(k, parent_equation, set_mask):
+                if debug:
+                    print('you have called row solution on row', k,'set_mask', set_mask)
                 for s in parent_equation:
-                    print('recievied solution', s * 1, 'in row', k)
-                    # parity in this row will change based on set bits in solution
-                    # get set solution bits which are used in this row
-                    # the parity of those changes the parity of this row equation
-                    # s & ~set_mask -> solutions which are set
-                    # solutions which are set & Q[k, :-1] -> solutions which are set and in equation
-                    # solutions which are set and in equation + Q[k,-1] -> sum
-                    row_parity = np.sum(s & set_mask & Q[k, :-1]) + Q[k, -1]
-                    # enumerate free variables restricted by their parity
-                    for row_value in enumerate_parity(free, row_parity):
-                        # convert those to solutions
-                        # expand list to be only unset solutions in equation
-                        solution = expand_list(bitfield(row_value), ~set_mask & Q[k, :-1])
-                        #combine our set solution variables with previous row
-                        print('row', k, 'row value', row_value, 'parity', row_parity, 'unmod parity',
-                        Q[k, -1] * 1, 'solution', np.array(solution), 'set', set_mask * 1, 'row', Q[k, :-1] * 1, 'free', (~set_mask & Q[k, :-1]) * 1)
-                        print('combined solution for ', k, 's', s, 'combined', ((np.array(solution) == 1) | s) * 1)
-                        yield (np.array(solution) == 1) | s
-
+                    if debug:
+                        print('recievied solution', s * 1, 'in row', Q[k, :], 'will have this subset after set', Q[k, ~set_mask])
+                    #get set values and add to answer
+                    row_answer = Q[k, -1] - s @ Q[k, :-1]
+                    #get movable unset values
+                    free = (Q[k, :] != 0) & (~set_mask)
+                    if debug:
+                        print('I believe these are free', free)
+                    if debug:
+                        print('can I make', Q[k, free],'@', '?', ' == ', row_answer)
+                    #get degrees of freedom
+                    for i in range(2**np.sum(free)):
+                        proposed = bitfield(i,np.sum(free))
+                        if debug:
+                            print(f'Proposed ({i}) {proposed}')
+                        if Q[k, free] @ proposed == row_answer:
+                            if debug:
+                                print(Q[k, free],'@', proposed, ' == ', row_answer)
+                            solution = np.zeros(N)
+                            solution[free[:-1]] = proposed
+                            yield solution + s
 
             #instantiate and append generator evaluated in this context
             # find number of free bits
-            free = np.sum(~set_mask & Q[k, :-1])
-            print('before append', free, Q[k,:-1], set_mask)
-            if free > 0:
-                row_equations.append(row_solution(k, row_equations[-1], np.copy(set_mask), free))
+            if np.sum(set_mask == 0) > 0:
+                if debug:
+                    print('adding row solution generator ', k)
+                row_equations.append(row_solution(k, row_equations[-1], np.copy(set_mask)))
                 #update set mask
-                print(set_mask, Q[k, :-1])
-                set_mask |= Q[k, :-1]
-                print(set_mask, 'after')
+                set_mask[:-1] |= Q[k, :-1] != 0
+            else:
+                if debug:
+                    print('Unable to find free var for row', k)
 
     #generators are all chained together, so only outter one need be generated
-    print(row_equations)
+    if debug:
+        print(row_equations)
     solutions = [s for s in row_equations[-1]]
     return solutions
 
-def expand_list(values, mask):
-    result = [0 for _ in mask]
-    j = 0
-    for i,m in enumerate(mask):
-        if m:
-            if j == len(values):
-                result[i] = 0
-            else:
-                result[i] = values[j]
-                j += 1
-    return result
-
-def bitfield(n):
+def bitfield(n, size):
     '''convert an integer into a list of bits'''
-    return [n >> i & 1 for i in range(n.bit_length() - 1,-1,-1)]
-
-def enumerate_parity( nbits, set_parity ):
-    '''I have no idea how to do this so I just brute force it'''
-    value = 0
-    while value < 2**nbits:
-        if parity(value) == set_parity:
-            yield value
-        value += 1
-
-
-def bitarray_parity( n ):
-    return np.sum(n) #% 2
-
-def parity( n ):
-    parity = 0
-    while n:
-        parity += 1
-        n = n & (n - 1)
-    return parity
+    expanded = [1 if digit=='1' else 0 for digit in bin(n)[2:]]
+    while len(expanded) < size:
+        expanded.insert(0,0)
+    return expanded

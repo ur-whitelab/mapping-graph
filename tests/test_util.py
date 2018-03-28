@@ -41,7 +41,7 @@ def test_integer_row_echelon():
     assert not integer_is_row_echelon(A), '4x5 zeroes off-by-one'
 
     A = np.zeros( (2, 5) )
-    A[0,1] = 6
+    A[0,1] = -6
     A[1,0] = 4
 
     assert not integer_is_row_echelon(A), '2x5 reversed leading coefficients'
@@ -64,19 +64,55 @@ def test_integer_guass_elim_examples():
     A[2, 4] = 1
     assert integer_is_row_echelon(integer_gauss_elim(A)), 'non-square 3x5'
 
-def test_integer_solve():
+def test_bitfield():
+    assert bitfield(1, 2) == [0, 1]
+    assert bitfield(2, 2) == [1, 0]
+    assert bitfield(3, 5) == [0,0,0,1,1]
+
+def test_integer_solve1():
     #      0
     #     / \
-    #    0   0
+    #    1   2
     #   / \ / \
-    #  0   0   0
+    #  3   4   5
     A = np.array([
         [1,1,0,1,0,0],
         [1,1,1,0,1,0],
         [1,0,1,0,0,1]
     ])
     print(A * 1)
-    solutions = integer_solve(A)
+    solutions = integer_solve(A, debug=True)
     for s in solutions:
         print(s * 1)
-    assert False
+    assert len(solutions) == 4
+
+
+def test_integer_solve2():
+    #      0
+    #     / \
+    #    1   2
+    A = np.array([
+        [1, 1, 0],
+        [1, 0, 1]
+    ])
+    print(A * 1)
+    solutions = integer_solve(A, debug=True)
+    for s in solutions:
+        print(s * 1)
+    assert len(solutions) == len( [ [0], [1, 2] ])
+
+def test_integer_solve3():
+    #      0
+    #     / \
+    #    1   2
+    #   / \    \
+    #  3   4    5
+    A = np.array([
+        [1, 1, 0, 1, 0, 0],
+        [1, 1, 0, 0, 1, 0],
+        [1, 0, 1, 0, 0, 1]
+    ])
+    solutions = integer_solve(A, debug=True)
+    for s in solutions:
+        print(s * 1)
+    assert len(solutions) == len([[0], [1, 2], [1, 5], [3, 4, 2], [3, 4, 5]])
