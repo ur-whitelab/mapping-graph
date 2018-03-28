@@ -1,5 +1,6 @@
 from .reading import smiles2graph, chem_line_graph
 from .equiv import equiv_classes, equiv_function
+from .util import integer_solve
 
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
@@ -104,8 +105,8 @@ class MOG:
         atom_string = ','.join([self._label_map[n][0] for n in nbunch])
         id_string = ','.join([self._label_map[n][1] for n in nbunch])
         if nbunch not in self._graph:
-                self._graph.add_node(nbunch, {'label': atom_string + '\n' + id_string})
-                return True
+            self._graph.add_node(nbunch, **{'label': atom_string + '\n' + id_string})
+            return True
         return False
 
     def _remove_bond(self, graph, mol):
@@ -172,18 +173,23 @@ class MOG:
 
         if len(self._graph[node]) == 0:
             return
-
-        for i,n in enumerate(self._graph.neighbors(node)):
+        nlist = list(self._graph.neighbors(node))
+        for i,n in enumerate(nlist):
             # if we have more than 1 child, we're creating additional paths
             new_index = index
             #save modifying the original path for last
-            if i != len(self._graph.neighbors(node)) - 1:
+            if i != len(nlist) - 1:
                 #duplicate current path
                 self._path_matrix.append(self._path_matrix[index][:])
                 new_index = len(self._path_matrix) - 1
 
             # descend
             self._build_path_layer(n, new_index)
+
+    def mappings(self):
+        labels = ['({})'.format(d['label'].split('\n')[0]) for _,d in self._graph.nodes(data=True)]
+        for s in integer_solve(self.path_matrix):
+            yield [labels[i] for i,si in enumerate(s) if si == 1]
 
     def print_path(self, p):
         inv_map = {v: k for k, v in self._path_map.items()}
@@ -197,7 +203,7 @@ class MOG:
         pos = graphviz_layout(self._graph, prog='dot', args='')
         fig = plt.figure(figsize=(12, 8))
         if len(self._graph) <= 25:
-            nx.draw(self._graph, pos, labels={n: d['label'] for n,d in self._graph.nodes_iter(data=True)},
+            nx.draw(self._graph, pos, labels={n: d['label'] for n,d in self._graph.nodes(data=True)},
                 node_size=5000)
         else:
             nx.draw(self._graph, pos, index + 1)

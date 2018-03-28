@@ -17,13 +17,16 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 def start():
     fire.Fire({
-        
+
         'MOG': mog,
         'draw': draw_mol,
         'count': count
     })
 
-def mog(smiles, output='mog.png', symmetry=True, paths=False):
+def mog(smiles, output='mog.png', symmetry=True, paths=False, mappings=True):
+    '''
+    Compute exhaustive mapping graph operator
+    '''
     mog = MOG(smiles, symmetry)
     #print(len(mog),len(smiles2graph(smiles)))
     if paths:
@@ -33,14 +36,20 @@ def mog(smiles, output='mog.png', symmetry=True, paths=False):
         plot = mog.draw(format=output.split('.')[1])
         with open(output, 'wb') as f:
             f.write(plot)
+    for mapping in mog.mappings():
+        print('-'.join(mapping))
+
 def count(smilesdata, output='lib_data.txt',timeout=5,symmetry=True, sample_size=8000):
+    '''
+    Count...?
+    '''
     x = []
     compression = []
     #counter = 0
     line_count = 0
     #sample_size=int(sample_size)
     for file_lines in open(smilesdata).readlines(): line_count += 1
-    
+
     if line_count <= sample_size:
         sample_idx = np.arange(line_count)
     else:
@@ -55,7 +64,7 @@ def count(smilesdata, output='lib_data.txt',timeout=5,symmetry=True, sample_size
             #print(smiles)
             try:
                 G = smiles2graph(smiles)
-            
+
             except:
                 continue
             mol = rdkit.Chem.MolFromSmiles(smiles)
@@ -81,26 +90,29 @@ def count(smilesdata, output='lib_data.txt',timeout=5,symmetry=True, sample_size
                         format(smiles = smiles,
                                h_atoms = heavy_atoms,
                                bond_number = edges,
-                               bell = bellnum, 
-                               naive = naive_count, 
-                               starsbars = stars_bars, 
+                               bell = bellnum,
+                               naive = naive_count,
+                               starsbars = stars_bars,
                                symmetric = symmetric_counts,
                                mog_nodes = len(mog.graph)))
-            except MOG.TimeoutError:                
+            except MOG.TimeoutError:
                 f.write('{smiles} {h_atoms} {bond_number} {bell} {naive} {starsbars} {symmetric} {mog_nodes} \n'.
                         format(smiles = smiles,
                                h_atoms = heavy_atoms,
                                bond_number = edges,
-                               bell = bellnum, 
-                               naive = naive_count, 
-                               starsbars = stars_bars, 
+                               bell = bellnum,
+                               naive = naive_count,
+                               starsbars = stars_bars,
                                symmetric = symmetric_counts,
                                mog_nodes = 'NA'))
                 continue
-            
+
     f.close()
 
 def draw_mol(smiles, output='molecule.svg', graph=None, line_graph=None):
+    '''
+    Draw a molecule, give information about its equivalent atoms and optionally convert to graph/line graph
+    '''
     G=smiles2graph(smiles)
     LG= chem_line_graph(G)
     bond_classes = equiv_classes(LG)

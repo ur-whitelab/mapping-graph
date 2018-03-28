@@ -49,6 +49,13 @@ def test_path_matrix():
     for p in mog.path_matrix:
         assert len(p) == len(mog.path_matrix[0])
 
+def test_mapping_iteration():
+    mog = MOG('CO', symmetry=True)
+    mappings = list(mog.mappings())
+    assert len(mappings) == 4
+
+
+
 def test_timeout():
     try:
         mog = MOG('CC1=CC=CC=C1', symmetry=False, build_timeout=1)

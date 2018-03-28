@@ -5,6 +5,8 @@ def integer_gauss_elim(A, b=None):
     '''
     Gaussian elmination for non-square.
     '''
+    if type(A) == list:
+        A = np.array(A)
     if b is None:
         b = np.ones((A.shape[0], 1))
     Q = np.concatenate( (A, b), axis=1).astype(np.int)
